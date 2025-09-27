@@ -1,34 +1,34 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Classe de gestion de label"""
+"""Label management class"""
 from .UI import UI
 
 class Label(UI):
-    """Classe de gestion de label
+    """Label management class
 
-    Elle ne fait qu’afficher un texte d’une seule ligne.
+    It only displays a single line of text.
     """
     def __init__(self, minitel, posx, posy, valeur = '', couleur = None):
         assert isinstance(posx, int)
         assert isinstance(posy, int)
         assert isinstance(valeur, str) or isinstance(valeur, str)
 
-        # Initialise le champ
+        # Initializes the field
         self.valeur = valeur
 
         UI.__init__(self, minitel, posx, posy, len(self.valeur), 1, couleur)
 
     def gere_touche(self, sequence):
-        """Gestion des touches
+        """Key management
 
-        Cette méthode est appelée automatiquement par la méthode executer.
+        This method is called automatically by the executer method.
 
-        Un Label ne gère aucune touche et renvoie donc tout le temps False.
+        A Label does not handle any keys and therefore always returns False.
 
         :param sequence:
-            La séquence reçue du Minitel.
+            The sequence received from the Minitel.
         :type sequence:
-            un objet Sequence
+            a Sequence object
 
         :returns:
             False
@@ -36,17 +36,17 @@ class Label(UI):
         return False
 
     def affiche(self):
-        """Affiche le label
+        """Displays the label
 
-        Cette méthode est appelée dès que l’on veut afficher l’élément.
+        This method is called as soon as we want to display the element.
         """
-        # Début du label à l’écran
+        # Start of the label on the screen
         self.minitel.position(self.posx, self.posy)
 
-        # Couleur du label
+        # Label color
         if self.couleur != None:
             self.minitel.couleur(caractere = self.couleur)
 
-        # Affiche le contenu
+        # Displays the content
         self.minitel.envoyer(self.valeur)
 

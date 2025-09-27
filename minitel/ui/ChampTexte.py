@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Classe de gestion de champ texte"""
+"""Text field management class"""
 
 from .UI import UI
 from ..constantes import (
@@ -8,7 +8,7 @@ from ..constantes import (
     ACCENT_TREMA, ACCENT_CEDILLE
 )
 
-# Caractères en provenance du Minitel gérés par le champ texte
+# Characters from the Minitel handled by the text field
 CARACTERES_MINITEL = (
     'abcdefghijklmnopqrstuvwxyz' +
     'ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
@@ -17,24 +17,24 @@ CARACTERES_MINITEL = (
 )
 
 class ChampTexte(UI):
-    """Classe de gestion de champ texte
+    """Text field management class
 
-    Cette classe gère un champ texte. À l’instar des champs texte d’un
-    formulaire HTML, ce champ texte dispose d’une longueur affichable et d’une
-    longueur totale maxi.
+    This class manages a text field. Like the text fields of a
+    HTML form, this text field has a displayable length and a
+    maximum total length.
 
-    ChampTexte ne gère aucun label.
+    ChampTexte does not manage any labels.
 
-    Les attributs suivants sont disponibles :
+    The following attributes are available:
 
-    - longueur_visible : longueur occupé par le champ à l’écran
-    - longueur_totale : nombre de caractères maximum du champ
-    - valeur : valeur du champ (encodée UTF-8)
-    - curseur_x : position du curseur dans le champ
-    - decalage : début d’affichage du champ à l’écran
-    - accent : accent en attente d’application sur le prochain caractère
-    - champ_cache : les caractères ne sont pas affichés sur le minitel, il sont
-                    remplacés par des '*' (utiliser pour les mots de passes par exemple)
+    - longueur_visible: length occupied by the field on the screen
+    - longueur_totale: maximum number of characters in the field
+    - valeur: value of the field (UTF-8 encoded)
+    - curseur_x: position of the cursor in the field
+    - decalage: start of display of the field on the screen
+    - accent: accent waiting to be applied to the next character
+    - champ_cache: the characters are not displayed on the minitel, they are
+                    replaced by '*' (used for passwords for example)
     """
     def __init__(self, minitel, posx, posy, longueur_visible,
                  longueur_totale = None, valeur = '', couleur = None, champ_cache=False):
@@ -51,7 +51,7 @@ class ChampTexte(UI):
 
         UI.__init__(self, minitel, posx, posy, longueur_visible, 1, couleur)
 
-        # Initialise le champ
+        # Initializes the field
         self.longueur_visible = longueur_visible
         self.longueur_totale = longueur_totale
         self.valeur = '' + valeur
@@ -61,27 +61,27 @@ class ChampTexte(UI):
         self.accent = None
         self.champ_cache = champ_cache
 
-    def gere_touche(self, sequence):
-        """Gestion des touches
+    def gere_touche(self, sequence) -> bool:
+        """Key management
 
-        Cette méthode est appelée automatiquement par la méthode executer.
+        This method is called automatically by the executer method.
 
-        Les touches gérées par la classe ChampTexte sont les suivantes :
+        The keys managed by the ChampTexte class are as follows:
 
-        - GAUCHE, DROITE, pour se déplacer dans le champ,
-        - CORRECTION, pour supprimer le caractère à gauche du curseur,
+        - GAUCHE, DROITE, to move around in the field,
+        - CORRECTION, to delete the character to the left of the cursor,
         - ACCENT_AIGU, ACCENT_GRAVE, ACCENT_CIRCONFLEXE, ACCENT_TREMA,
         - ACCENT_CEDILLE,
-        - les caractères de la norme ASCII pouvant être tapés sur un clavier
-          de Minitel.
+        - the characters of the ASCII standard that can be typed on a Minitel
+          keyboard.
 
         :param sequence:
-            La séquence reçue du Minitel.
+            The sequence received from the Minitel.
         :type sequence:
-            un objet Sequence
+            a Sequence object
 
         :returns:
-            True si la touche a été gérée par le champ texte, False sinon.
+            True if the key was handled by the text field, False otherwise.
         """
         if sequence.egale(GAUCHE):
             self.accent = None
@@ -137,25 +137,25 @@ class ChampTexte(UI):
         return False
 
     def curseur_gauche(self):
-        """Déplace le curseur d’un caractère sur la gauche
+        """Moves the cursor one character to the left
 
-        Si le curseur ne peut pas être déplacé, un bip est émis.
+        If the cursor cannot be moved, a beep is emitted.
 
-        Si le curseur demande à se déplacer dans une partie du champ non
-        encore visible, un décalage s’opère.
+        If the cursor requests to move to a part of the field that is not
+        yet visible, a shift occurs.
 
         :returns:
-            True si le curseur a subi un déplacement, False sinon.
+            True if the cursor has been moved, False otherwise.
         """
-        # On ne peut déplacer le curseur à gauche s’il est déjà sur le premier
-        # caractère
+        # We cannot move the cursor to the left if it is already on the first
+        # character
         if self.curseur_x == 0:
             self.minitel.bip()
             return False
 
         self.curseur_x = self.curseur_x - 1
 
-        # Effectue un décalage si le curseur déborde de la zone visible
+        # Performs a shift if the cursor overflows the visible area
         if self.curseur_x < self.decalage:
             self.decalage = max(
                 0,
@@ -171,25 +171,25 @@ class ChampTexte(UI):
         return True
     
     def curseur_droite(self):
-        """Déplace le curseur d’un caractère sur la droite
+        """Moves the cursor one character to the right
 
-        Si le curseur ne peut pas être déplacé, un bip est émis.
+        If the cursor cannot be moved, a beep is emitted.
 
-        Si le curseur demande à se déplacer dans une partie du champ non
-        encore visible, un décalage s’opère.
+        If the cursor requests to move to a part of the field that is not
+        yet visible, a shift occurs.
 
         :returns:
-            True si le curseur a subi un déplacement, False sinon.
+            True if the cursor has been moved, False otherwise.
         """
-        # On ne peut déplacer le curseur à droite s’il est déjà sur le dernier
-        # caractère ou à la longueur max
+        # We cannot move the cursor to the right if it is already on the last
+        # character or at the maximum length
         if self.curseur_x == min(len(self.valeur), self.longueur_totale):
             self.minitel.bip()
             return False
     
         self.curseur_x = self.curseur_x + 1
 
-        # Effectue un décalage si le curseur déborde de la zone visible
+        # Performs a shift if the cursor overflows the visible area
         if self.curseur_x > self.decalage + self.longueur_visible:
             self.decalage = max(
                 0,
@@ -205,9 +205,9 @@ class ChampTexte(UI):
         return True
 
     def gere_arrivee(self):
-        """Gère l’activation du champ texte
+        """Manages the activation of the text field
 
-        La méthode place positionne le curseur et le rend visible.
+        The method positions the cursor and makes it visible.
         """
         self.minitel.position(
             self.posx + self.curseur_x - self.decalage,
@@ -216,52 +216,52 @@ class ChampTexte(UI):
         self.minitel.curseur(True)
 
     def gere_depart(self):
-        """Gère la désactivation du champ texte
+        """Manages the deactivation of the text field
 
-        La méthode annule tout début d’accent et rend invisible le curseur.
+        The method cancels any accent start and makes the cursor invisible.
         """
         self.accent = None
         self.minitel.curseur(False)
 
     def affiche(self):
-        """Affiche le champ texte
+        """Displays the text field
 
-        Si la valeur est plus petite que la longueur affichée, on remplit les
-        espaces en trop par des points.
+        If the value is smaller than the displayed length, we fill the
+        extra spaces with dots.
 
-        Après appel à cette méthode, le curseur est automatiquement positionné.
+        After calling this method, the cursor is automatically positioned.
 
-        Cette méthode est appelée dès que l’on veut afficher l’élément.
+        This method is called as soon as we want to display the element.
         """
-        # Début du champ texte à l’écran
+        # Start of the text field on the screen
         self.minitel.curseur(False)
         self.minitel.position(self.posx, self.posy)
 
-        # Couleur du label
+        # Label color
         if self.couleur != None:
             self.minitel.couleur(caractere = self.couleur)
 
         if not self.champ_cache :
-            #Si le champ n'est pas caché, on affiche les caractères
+            #If the field is not hidden, we display the characters
             val = str( self.valeur )
         else : 
             val = "*" * len( self.valeur  ) 
 
         if len(val) - self.decalage <= self.longueur_visible:
-            # Cas valeur plus petite que la longueur visible
+            # Case where value is smaller than visible length
             affichage = val[self.decalage:]
             affichage = affichage.ljust(self.longueur_visible, '.')
         else:
-            # Cas valeur plus grande que la longueur visible
+            # Case where value is larger than visible length
             affichage = val[
                 self.decalage:
                 self.decalage + self.longueur_visible
             ]
 
-        # Affiche le contenu
+        # Displays the content
         self.minitel.envoyer(affichage)
 
-        # Place le curseur visible
+        # Makes the cursor visible
         self.minitel.position(
             self.posx + self.curseur_x - self.decalage,
             self.posy

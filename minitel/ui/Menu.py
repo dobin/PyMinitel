@@ -1,46 +1,45 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Classe de gestion de menu"""
+"""Menu management class"""
 from .UI import UI
 from ..constantes import HAUT, BAS
 from ..Sequence import Sequence
 
 class Menu(UI):
-    """Classe de gestion de menu
+    """Menu management class
 
-    Cette classe permet d’afficher un menu à l’utilisateur afin qu’il puisse
-    sélectionner une entrée via les touches HAUT et BAS.
+    This class allows displaying a menu to the user so that they can
+    select an entry using the UP and DOWN keys.
 
-    La gestion de l’action en cas de validation ou d’annulation est à la charge
-    du programme appelant.
+    The management of the action in case of validation or cancellation is the responsibility
+    of the calling program.
 
-    Elle instaure les attributs suivants :
+    It establishes the following attributes:
 
-    - options : tableau contenant les options (des chaînes unicodes),
-    - selection : option sélectionnée (index dans le tableau d’options),
-    - largeur_ligne : largeur de ligne déterminée à partir de la ligne la plus
-      longue.
+    - options: array containing the options (unicode strings),
+    - selection: selected option (index in the options array),
+    - largeur_ligne: line width determined from the longest line.
 
-    Les options sont contenues dans un tableau de la forme suivante::
+    The options are contained in an array of the following form::
 
         options = [
-          u'Nouveau',
-          u'Ouvrir',
+          u'New',
+          u'Open',
           u'-',
-          u'Enregistrer',
-          u'Enreg. sous...',
-          u'Rétablir',
+          u'Save',
+          u'Save as...',
+          u'Restore',
           u'-',
-          u'Aperçu',
-          u'Imprimer...',
+          u'Preview',
+          u'Print...',
           u'-',
-          u'Fermer',
-          u'Quitter'
+          u'Close',
+          u'Quit'
         ]
 
-    Un moins (-) indique un séparateur.
+    A minus (-) indicates a separator.
 
-    Il ne peut pas y avoir 2 fois la même entrée dans la liste d’options.
+    There cannot be the same entry twice in the options list.
 
     """
     def __init__(self, minitel, options, posx, posy, selection = 0,
@@ -48,12 +47,12 @@ class Menu(UI):
         self.options = options
         self.selection = selection
 
-        # Détermine la largeur du menu
+        # Determines the width of the menu
         self.largeur_ligne = 0
         for option in self.options:
             self.largeur_ligne = max(self.largeur_ligne, len(option))
 
-        # Détermine la largeur et la hauteur de la zone d’affichage du menu
+        # Determines the width and height of the menu display area
         largeur = self.largeur_ligne + 2
         hauteur = len(self.options) + 2
 
@@ -62,24 +61,24 @@ class Menu(UI):
         self.activable = True
 
     def gere_touche(self, sequence):
-        """Gestion des touches
+        """Key management
 
-        Cette méthode est appelée automatiquement par la méthode executer.
+        This method is called automatically by the executer method.
 
-        Les touches gérées par la classe ChampTexte sont HAUT et BAS pour se
-        déplacer dans le menu.
+        The keys managed by the Menu class are UP and DOWN to
+        move around in the menu.
 
-        Un bip est émis si on appuie sur la touche HAUT (respectivement BAS)
-        alors que la sélection est déjà sur la première (respectivement
-        dernière) ligne.
+        A beep is emitted if the UP (respectively DOWN) key is pressed
+        while the selection is already on the first (respectively
+        last) line.
 
         :param sequence:
-            La séquence reçue du Minitel.
+            The sequence received from the Minitel.
         :type sequence:
-            un objet Sequence
+            a Sequence object
 
         :returns:
-            True si la touche a été gérée par le champ texte, False sinon.
+            True if the key was handled by the menu, False otherwise.
         """
         assert isinstance(sequence, Sequence)
 
@@ -104,159 +103,159 @@ class Menu(UI):
         return False
 
     def affiche(self):
-        """Affiche le menu complet"""
+        """Displays the complete menu"""
         i = 0
 
-        # Position sur la ligne du haut
+        # Position on the top line
         self.minitel.position(self.posx + 1, self.posy)
 
-        # Application de la couleur si besoin
+        # Application of color if necessary
         if self.couleur != None:
             self.minitel.couleur(caractere = self.couleur)
 
-        # Trace la ligne du haut
+        # Draws the top line
         self.minitel.repeter(0x5f, self.largeur_ligne)
 
-        # Trace les lignes une par une
+        # Draws the lines one by one
         for _ in self.options:
-            # Application de la couleur si besoin
+            # Application of color if necessary
             if self.couleur != None:
                 self.minitel.couleur(caractere = self.couleur)
 
-            # Affiche la ligne courante en indiquant si elle est sélectionnée
+            # Displays the current line indicating if it is selected
             self.affiche_ligne(i, self.selection == i)
             i += 1
 
-        # Position sur la ligne du bas
+        # Position on the bottom line
         self.minitel.position(self.posx + 1, self.posy + len(self.options) + 1)
 
-        # Application de la couleur si besoin
+        # Application of color if necessary
         if self.couleur != None:
             self.minitel.couleur(caractere = self.couleur)
 
-        # Trace la ligne du bas
+        # Draws the bottom line
         self.minitel.repeter(0x7e, self.largeur_ligne)
 
     def affiche_ligne(self, selection, etat = False):
-        """Affiche une ligne du menu
+        """Displays a line of the menu
         
         :param selection:
-            index de la ligne à afficher dans la liste des options
+            index of the line to display in the options list
         :type selection:
-            un entier positif
+            a positive integer
         
         :param etat:
         :type etat:
-            un booléen
+            a boolean
         """
         assert isinstance(selection, int)
         assert selection >= 0 and selection < len(self.options)
         assert etat in [True, False]
 
-        # Positionne au début de la ligne
+        # Positions at the beginning of the line
         self.minitel.position(self.posx, self.posy + selection + 1)
 
-        # Application de la couleur si besoin
+        # Application of color if necessary
         if self.couleur != None:
             self.minitel.couleur(caractere = self.couleur)
 
-        # Dessine la ligne gauche
+        # Draws the left line
         self.minitel.envoyer([0x7d])
 
-        # 2 cas possibles : un séparateur ou une entrée normale
+        # 2 possible cases: a separator or a normal entry
         if self.options[selection] == '-':
             self.minitel.repeter(0x60, self.largeur_ligne)
         else:
-            # Si l’option est sélectionnée, on applique l’effet vidéo inverse
+            # If the option is selected, we apply the inverse video effect
             if etat:
                 self.minitel.effet(inversion = True)
 
-            # Dessine une entrée en la justifiant à gauche sur la largeur de
-            # la ligne
+            # Draws an entry by left-justifying it over the width of
+            # the line
             option = self.options[selection]
             self.minitel.envoyer(option.ljust(self.largeur_ligne))
 
-        # Si l’option est sélectionnée, on arrête l’effet vidéo inverse
+        # If the option is selected, we stop the inverse video effect
         if etat:
             self.minitel.effet(inversion = False)
 
-        # Dessine la ligne droite
+        # Draws the right line
         self.minitel.envoyer([0x7b])
         
     def change_selection(self, selection):
-        """Change la sélection en cours
+        """Changes the current selection
         
         :param selection:
-            index de la ligne à sélectionner dans la liste des options
+            index of the line to select in the options list
         :type selection:
-            un entier positif
+            a positive integer
         """
         assert isinstance(selection, int)
         assert selection >= 0 and selection < len(self.options)
 
-        # Si la nouvelle sélection est la sélection courante, on ignore
+        # If the new selection is the current selection, we ignore it
         if self.selection == selection:
             return
 
-        # Affiche la ligne sélectionnée actuelle comme non sélectionnée
+        # Displays the current selected line as not selected
         self.affiche_ligne(self.selection, False)
 
-        # Affiche la nouvelle ligne sélectionnée
+        # Displays the new selected line
         self.affiche_ligne(selection, True)
 
-        # Met à jour l’index de l’option sélectionnée
+        # Updates the index of the selected option
         self.selection = selection
 
     def option_suivante(self, numero):
-        """Détermine l’index de l’option suivante
+        """Determines the index of the next option
 
-        Retourne l’index de l’option suivant l’option indiqué par l’argument
-        numero.
+        Returns the index of the option following the option indicated by the
+        numero argument.
 
         :param numero:
-            index de la ligne à sélectionner dans la liste des options
+            index of the line to select in the options list
         :type numero:
-            un entier positif
+            a positive integer
 
         :returns:
-            l’index de l’option suivante ou None si elle n’existe pas.
+            the index of the next option or None if it does not exist.
         """
         assert isinstance(numero, int)
         assert numero >= 0 and numero < len(self.options)
 
-        # Parcours les options après l’index numéro en restant dans les limites
-        # de la liste des options
+        # Traverses the options after the numero index while staying within the
+        # limits of the options list
         for i in range(numero + 1, len(self.options)):
-            # Les séparateurs sont ignorés
+            # Separators are ignored
             if self.options[i] != '-':
                 return i
 
-        # Aucune option n’a été trouvée après celle indiquée dans numero
+        # No option was found after the one indicated in numero
         return None
     
     def option_precedente(self, numero):
-        """Détermine l’index de l’option précédente
+        """Determines the index of the previous option
 
-        Retourne l’index de l’option précédant l’option indiqué par l’argument
-        numero.
+        Returns the index of the option preceding the option indicated by the
+        numero argument.
 
         :param numero:
-            index de la ligne à sélectionner dans la liste des options
+            index of the line to select in the options list
         :type numero:
-            un entier positif
+            a positive integer
 
         :returns:
-            l’index de l’option précédente ou None si elle n’existe pas.
+            the index of the previous option or None if it does not exist.
         """
         assert isinstance(numero, int)
         assert numero >= 0 and numero < len(self.options)
 
-        # Parcours les options avant l’index numéro en restant dans les limites
-        # de la liste des options
+        # Traverses the options before the numero index while staying within the
+        # limits of the options list
         for i in range(numero - 1, -1, -1):
-            # Les séparateurs sont ignorés
+            # Separators are ignored
             if self.options[i] != '-':
                 return i
 
-        # Aucune option n’a été trouvée avant celle indiquée dans numero
+        # No option was found before the one indicated in numero
         return None

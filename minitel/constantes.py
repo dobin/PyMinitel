@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Définitions de constantes de l’univers Minitel"""
+"""Definitions of constants for the Minitel universe"""
 
-# Codes de contrôles de la norme ASCII
+# Control codes of the ASCII standard
 NUL = 0x00 # null
 SOH = 0x01 # start of heading
 STX = 0x02 # start of text
@@ -42,12 +42,12 @@ SS3 = 0x1d # SS3
 RS  = 0x1e # record separator
 US  = 0x1f # unit separator
 
-PRO1 = [ESC, 0x39] # protocole 1
-PRO2 = [ESC, 0x3a] # protocole 2
-PRO3 = [ESC, 0x3b] # protocole 3
+PRO1 = [ESC, 0x39] # protocol 1
+PRO2 = [ESC, 0x3a] # protocol 2
+PRO3 = [ESC, 0x3b] # protocol 3
 CSI  = [ESC, 0x5b] # CSI
 
-# Commandes PRO1
+# PRO1 commands
 DECONNEXION = 0x67
 CONNEXION = 0x68
 RET1 = 0x6c
@@ -61,7 +61,7 @@ STATUS_PROTOCOLE = 0x76
 ENQROM = 0x7b
 RESET = 0x7f
 
-# Commandes PRO2
+# PRO2 commands
 COPIE = 0x7c
 AIGUILLAGE_TO = 0x62
 NON_DIFFUSION = 0x64
@@ -79,44 +79,44 @@ TELINFO = [0x31, 0x7d]
 MIXTE1 = [0X32, 0X7d]
 MIXTE2 = [0X32, 0X7e]
 
-# Commandes PRO3
+# PRO3 commands
 AIGUILLAGE_OFF = 0x60
 AIGUILLAGE_ON = 0x61
 AIGUILLAGE_FROM = 0x63
 
-# Longueurs commandes PRO
+# PRO command lengths
 LONGUEUR_PRO1 = 3
 LONGUEUR_PRO2 = 4
 LONGUEUR_PRO3 = 5
 
-# Autres codes
+# Other codes
 COPIE_FRANCAIS = 0x6a
 COPIE_AMERICAIN = 0x6b
 ETEN = 0x41
 C0 = 0x43
 
-# Codes PRO2+START/STOP
+# PRO2+START/STOP codes
 ROULEAU = 0x43
 PROCEDURE = 0x44
 MINUSCULES = 0x45
 
-# Codes PRO2+PROG
+# PRO2+PROG codes
 B9600 = 0x7f
 B4800 = 0x76
 B1200 = 0x64
 B300 = 0x52
 
-# Codes PRO3+START/STOP
+# PRO3+START/STOP codes
 ETEN = 0x41
 C0 = 0x43
 
-# Codes de réception
+# Reception codes
 RCPT_ECRAN = 0x58
 RCPT_CLAVIER = 0x59
 RCPT_MODEM = 0x5a
 RCPT_PRISE = 0x5b
 
-# Codes d’émission
+# Emission codes
 EMET_ECRAN = 0x50
 EMET_CLAVIER = 0x51
 EMET_MODEM = 0x52
@@ -129,7 +129,7 @@ ACCENT_AIGU = [SS2, 0x42]
 ACCENT_CIRCONFLEXE = [SS2, 0x43]
 ACCENT_TREMA = [SS2, 0x48]
 
-# Touches de direction
+# Direction keys
 HAUT = [CSI, 0x41]
 BAS = [CSI, 0x42]
 GAUCHE = [CSI, 0x44]
@@ -142,12 +142,12 @@ MAJ_DROITE = [CSI, 0x34, 0x68]
 
 CTRL_GAUCHE = 0x7f
 
-# Touche Entrée/Retour chariot
+# Enter/Carriage return key
 ENTREE      = 0x0d
 MAJ_ENTREE  = [CSI, 0x48]
 CTRL_ENTREE = [CSI, 0x32, 0x4a]
 
-# Touches de fonction
+# Function keys
 ENVOI      = [DC3, 0x41]
 RETOUR     = [DC3, 0x42]
 REPETITION = [DC3, 0x43]
@@ -158,7 +158,7 @@ CORRECTION = [DC3, 0x47]
 SUITE      = [DC3, 0x48]
 CONNEXION  = [DC3, 0x49]
 
-# Types de minitels
+# Minitel types
 TYPE_MINITELS = {
     'b': {
         'nom': 'Minitel 1',
@@ -282,8 +282,8 @@ TYPE_MINITELS = {
     },
 }
 
-# Les niveaux de gris s’échelonnent comme suit :
-# nor, bleu, rouge, magenta, vert, cyan, jaune, blanc
+# Grayscale levels are staggered as follows:
+# black, blue, red, magenta, green, cyan, yellow, white
 COULEURS_MINITEL = {
     'noir': 0, 'rouge': 1, 'vert': 2, 'jaune': 3,
     'bleu': 4, 'magenta': 5, 'cyan': 6, 'blanc': 7,
@@ -293,7 +293,7 @@ COULEURS_MINITEL = {
     4: 2, 5: 6, 6: 3, 7: 7
 }
 
-# Capacités les plus basiques du Minitel
+# Most basic Minitel capabilities
 CAPACITES_BASIQUES = {
     'nom': 'Minitel inconnu',
     'retournable': False,
@@ -305,7 +305,7 @@ CAPACITES_BASIQUES = {
     'version': None
 }
 
-# Codes d’identification du constructeur
+# Manufacturer identification codes
 CONSTRUCTEURS = {
     'A': 'Matra',
     'B': 'RTIC',

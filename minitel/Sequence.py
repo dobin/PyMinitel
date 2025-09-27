@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Sequence est un module permettant de gérer les séquences de caractères
-pouvant être envoyées à un Minitel.
+"""Sequence is a module for managing character sequences
+that can be sent to a Minitel.
 
 """
 
 from unicodedata import normalize
 from binascii import unhexlify
 
-# Tables de conversion des caractères spéciaux
+# Conversion tables for special characters
 UNICODEVERSVIDEOTEX = {
     '£': '1923', '°': '1930', '±': '1931', 
     '←': '192C', '↑': '192D', '→': '192E', '↓': '192F', 
@@ -30,27 +30,27 @@ UNICODEVERSAUTRE = {
 }
 
 class Sequence:
-    """Une classe représentant une séquence de valeurs
+    """A class representing a sequence of values
 
-    Une Séquence est une suite de valeurs prêtes à être envoyées à un Minitel.
-    Ces valeurs respectent la norme ASCII.
+    A Sequence is a series of values ready to be sent to a Minitel.
+    These values comply with the ASCII standard.
     """
     def __init__(self, valeur = None, standard = 'VIDEOTEX'):
-        """Constructeur de Sequence
+        """Sequence constructor
 
         :param valeur:
-            valeur à ajouter à la construction de l’objet. Si la valeur est à
-            None, aucune valeur n’est ajoutée
+            value to add when constructing the object. If the value is
+            None, no value is added
         :type valeur:
-            une chaîne de caractères, un entier, une liste, une séquence ou
+            a string, an integer, a list, a sequence or
             None
 
         :param standard:
-            standard à utiliser pour la conversion unicode vers Minitel. Les
-            valeurs possibles sont VIDEOTEX, MIXTE et TELEINFORMATIQUE (la
-            casse est importante)
+            standard to use for unicode to Minitel conversion. The
+            possible values are VIDEOTEX, MIXTE and TELEINFORMATIQUE (case
+            is important)
         :type standard:
-            une chaîne de caractères
+            a string
         """
         assert valeur == None or \
                 isinstance(valeur, (list, int, str, Sequence))
@@ -64,16 +64,16 @@ class Sequence:
             self.ajoute(valeur)
         
     def ajoute(self, valeur):
-        """Ajoute une valeur ou une séquence de valeurs
+        """Adds a value or a sequence of values
 
-        La valeur soumise est d’abord canonisée par la méthode canonise avant
-        d’être ajoutée à la séquence. Cela garantit que la séquence ne contient
-        que des entiers représentant des caractères de la norme ASCII.
+        The submitted value is first canonicalized by the canonise method before
+        being added to the sequence. This ensures that the sequence only contains
+        integers representing characters of the ASCII standard.
 
         :param valeur:
-            valeur à ajouter
+            value to add
         :type valeur:
-            une chaîne de caractères, un entier, une liste ou une Séquence
+            a string, an integer, a list or a Sequence
         """
         assert isinstance(valeur, (list, int, str, Sequence))
 
@@ -81,68 +81,68 @@ class Sequence:
         self.longueur = len(self.valeurs)
 
     def canonise(self, valeur):
-        """Canonise une séquence de caractères
+        """Canonicalizes a character sequence
 
-        Si une liste est soumise, quelle que soit sa profondeur, elle sera
-        remise à plat. Une liste peut donc contenir des chaînes de caractères,
-        des entiers ou des listes. Cette facilité permet la construction de
-        séquences de caractères plus aisée. Cela facilite également la
-        comparaison de deux séquences.
+        If a list is submitted, whatever its depth, it will be
+        flattened. A list can therefore contain strings,
+        integers or lists. This facility allows for easier construction of
+        character sequences. It also facilitates the
+        comparison of two sequences.
 
         :param valeur:
-            valeur à canoniser
+            value to canonicalize
         :type valeur:
-            une chaîne de caractères, un entier, une liste ou une Séquence
+            a string, an integer, a list or a Sequence
 
         :returns:
-            Une liste de profondeur 1 d’entiers représentant des valeurs à la
-            norme ASCII.
+            A list of depth 1 of integers representing values in the
+            ASCII standard.
 
-        Exemple::
-            canonise(['dd', 32, ['dd', 32]]) retournera
+        Example::
+            canonise(['dd', 32, ['dd', 32]]) will return
             [100, 100, 32, 100, 100, 32]
         """
         assert isinstance(valeur, (list, int, str, Sequence))
 
-        # Si la valeur est juste un entier, on le retient dans une liste
+        # If the value is just an integer, we keep it in a list
         if isinstance(valeur, int):
             return [valeur]
 
-        # Si la valeur est une Séquence, ses valeurs ont déjà été canonisées
+        # If the value is a Sequence, its values have already been canonicalized
         if isinstance(valeur, Sequence):
             return valeur.valeurs
 
-        # À ce point, le paramètre contient soit une chaîne de caractères, soit
-        # une liste. L’une ou l’autre est parcourable par une boucle for ... in
-        # Transforme récursivement chaque élément de la liste en entier
+        # At this point, the parameter contains either a string or
+        # a list. Either one is iterable with a for ... in loop
+        # Recursively transforms each element of the list into an integer
         canonise = []
         for element in valeur:
             if isinstance(element, str):
-                # Cette boucle traite 2 cas : celui ou liste est une chaîne
-                # unicode et celui ou element est une chaîne de caractères
+                # This loop handles 2 cases: the one where list is a unicode
+                # string and the one where element is a string
                 for caractere in element:
                     for ascii in self.unicode_vers_minitel(caractere):
                         canonise.append(ascii)
             elif isinstance(element, int):
-                # Un entier a juste besoin d’être ajouté à la liste finale
+                # An integer just needs to be added to the final list
                 canonise.append(element)
             elif isinstance(element, list):
-                # Si l’élément est une liste, on la canonise récursivement
+                # If the element is a list, we canonicalize it recursively
                 canonise = canonise + self.canonise(element)
 
         return canonise
 
     def unicode_vers_minitel(self, caractere):
-        """Convertit un caractère unicode en son équivalent Minitel
+        """Converts a unicode character to its Minitel equivalent
 
         :param caractere:
-            caractère à convertir
+            character to convert
         :type valeur:
-            une chaîne de caractères unicode
+            a unicode string
 
         :returns:
-            une chaîne de caractères contenant une suite de caractères à
-            destination du Minitel.
+            a string containing a sequence of characters for
+            the Minitel.
         """
         assert isinstance(caractere, str) and len(caractere) == 1
 
@@ -156,23 +156,23 @@ class Sequence:
         return normalize('NFKD', caractere).encode('ascii', 'replace')
 
     def egale(self, sequence):
-        """Teste l’égalité de 2 séquences
+        """Tests the equality of 2 sequences
 
         :param sequence:
-            séquence à comparer. Si la séquence n’est pas un objet Sequence,
-            elle est d’abord convertie en objet Sequence afin de canoniser ses
-            valeurs.
+            sequence to compare. If the sequence is not a Sequence object,
+            it is first converted to a Sequence object in order to canonicalize its
+            values.
         :type sequence:
-            un objet Sequence, une liste, un entier, une chaîne de caractères
-            ou une chaîne unicode
+            a Sequence object, a list, an integer, a string
+            or a unicode string
 
         :returns:
-            True si les 2 séquences sont égales, False sinon
+            True if the 2 sequences are equal, False otherwise
         """
         assert isinstance(sequence, (Sequence, list, int, str))
 
-        # Si la séquence à comparer n’est pas de la classe Sequence, alors
-        # on la convertit
+        # If the sequence to compare is not of the Sequence class, then
+        # we convert it
         if not isinstance(sequence, Sequence):
             sequence = Sequence(sequence)
 

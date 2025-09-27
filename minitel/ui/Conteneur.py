@@ -1,72 +1,72 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Classe permettant de regrouper des éléments d’interface utilisateur"""
+"""Class for grouping user interface elements"""
 
 from .UI import UI
 from ..Sequence import Sequence
 from ..constantes import ENTREE, MAJ_ENTREE
 
 class Conteneur(UI):
-    """Classe permettant de regrouper des éléments d’interface utilisateur
+    """Class for grouping user interface elements
 
-    Cette classe permet de regrouper des éléments d’inteface utilisateur afin
-    de faciliter leur gestion. Elle est notamment capable d’afficher tous les
-    éléments qu’elle contient et de gérer le passage d’un élément à un autre.
+    This class allows grouping user interface elements to
+    facilitate their management. It is notably capable of displaying all the
+    elements it contains and managing the transition from one element to another.
 
-    Le passage d’un élément à l’autre se fait au moyen de la touche ENTREE pour
-    l’élément suivant et de la combinaison MAJUSCULE+ENTREE pour l’élément
-    précédent. Si l’utilisateur veut l’élément suivant alors qu’il est déjà
-    sur le dernier élément, le Minitel émettra un bip. Idem pour l’élément
-    précédent.
+    The transition from one element to another is done using the ENTER key for
+    the next element and the SHIFT+ENTER combination for the
+    previous element. If the user wants the next element while already
+    on the last element, the Minitel will emit a beep. Same for the
+    previous element.
 
-    Le éléments dont l’attribut activable est à False sont purement et
-    simplement ignorés lors de la navigation inter-éléments.
+    Elements whose activable attribute is False are purely and
+    simply ignored during inter-element navigation.
 
-    Les attributs suivants sont disponibles :
+    The following attributes are available:
 
-    - elements : liste des éléments dans leur ordre d’apparition
-    - element_actif : objet de classe UI désignant l’élément actif
-    - fond : couleur de fond du conteneur
+    - elements: list of elements in their order of appearance
+    - element_actif: UI class object designating the active element
+    - fond: background color of the container
     """
     def __init__(self, minitel, posx, posy, largeur, hauteur, couleur = None,
                  fond = None):
-        """Constructeur
+        """Constructor
 
         :param minitel:
-            L’objet auquel envoyer les commandes et recevoir les appuis de
-            touche.
+            The object to which to send commands and receive key
+            presses.
         :type minitel:
-            un objet Minitel
+            a Minitel object
 
         :param posx:
-            Coordonnée x de l’élément
+            x-coordinate of the element
         :type posx:
-            un entier
+            an integer
 
         :param posy:
-            Coordonnée y de l’élément
+            y-coordinate of the element
         :type posy:
-            un entier
+            an integer
         
         :param largeur:
-            Largeur de l’élément en caractères
+            Width of the element in characters
         :type largeur:
-            un entier
+            an integer
         
         :param hauteur:
-            Hauteur de l’élément en caractères
+            Height of the element in characters
         :type hauteur:
-            un entier
+            an integer
         
         :param couleur:
-            Couleur de l’élément
+            Color of the element
         :type couleur:
-            un entier, une chaîne de caractères ou None
+            an integer, a string or None
 
         :param fond:
-            Couleur de fond du conteneur
+            Background color of the container
         :type couleur:
-            un entier, une chaîne de caractères ou None
+            an integer, a string or None
         """
         assert isinstance(posx, int)
         assert isinstance(posy, int)
@@ -75,7 +75,7 @@ class Conteneur(UI):
         assert isinstance(couleur, (str, int)) or couleur == None
         assert isinstance(fond, (str, int)) or fond == None
 
-        # Initialisation des attributs
+        # Attribute initialization
         self.elements = []
         self.element_actif = None
         self.fond = fond
@@ -83,52 +83,52 @@ class Conteneur(UI):
         UI.__init__(self, minitel, posx, posy, largeur, hauteur, couleur)
 
     def gere_touche(self, sequence):
-        """Gestion des touches
+        """Key management
 
-        Cette méthode est appelée automatiquement par la méthode executer.
+        This method is called automatically by the executer method.
 
-        Elle tente avant tout de faire traiter la touche par l’élément actif.
-        Si l’élément actif ne gère pas la touche, le conteneur teste si les
-        touches ENTREE ou MAJ ENTREE ont été pressées. Ces deux touches
-        permettent à l’utilisateur de naviguer entre les éléments.
+        It first tries to have the key processed by the active element.
+        If the active element does not handle the key, the container tests if the
+        ENTER or SHIFT+ENTER keys have been pressed. These two keys
+        allow the user to navigate between elements.
 
-        En cas de changement d’élément actif, le conteneur appelle la méthode
-        gere_depart de l’ancien élément actif et la méthode gere_arrivee du
-        nouvel élément actif.
+        In case of a change of active element, the container calls the
+        gere_depart method of the old active element and the gere_arrivee method of the
+        new active element.
 
         :param sequence:
-            La séquence reçue du Minitel.
+            The sequence received from the Minitel.
         :type sequence:
-            un objet Sequence
+            a Sequence object
 
         :returns:
-            True si la touche a été gérée par le conteneur ou l’un de ses
-            éléments, False sinon.
+            True if the key was handled by the container or one of its
+            elements, False otherwise.
         """
         assert isinstance(sequence, Sequence)
 
-        # Aucun élement actif ? Donc rien à faire
+        # No active element? So nothing to do
         if self.element_actif == None:
             return False
 
-        # Fait suivre la séquence à l’élément actif
+        # Forwards the sequence to the active element
         touche_geree = self.element_actif.gere_touche(sequence)
 
-        # Si l’élément actif a traité la séquence, c’est fini
+        # If the active element has processed the sequence, it's over
         if touche_geree:
             return True
 
-        # Si l’élément actif n’a pas traité la séquence, regarde si le
-        # conteneur peut la traiter
+        # If the active element has not processed the sequence, see if the
+        # container can process it
 
-        # La touche entrée permet de passer au champ suivant
+        # The enter key allows moving to the next field
         if sequence.egale(ENTREE):
             self.element_actif.gere_depart()
             self.suivant()
             self.element_actif.gere_arrivee()
             return True
 
-        # La combinaison Majuscule + entrée permet de passer au champ précédent
+        # The Shift + Enter combination allows moving to the previous field
         if sequence.egale(MAJ_ENTREE):
             self.element_actif.gere_depart()
             self.precedent()
@@ -138,84 +138,84 @@ class Conteneur(UI):
         return False
             
     def affiche(self):
-        """Affichage du conteneur et de ses éléments
+        """Displays the container and its elements
 
-        À l’appel de cette méthode, le conteneur dessine le fond si la couleur
-        de fond a été définie. Ensuite, elle demande à chacun des éléments
-        contenus de se dessiner.
+        When this method is called, the container draws the background if the
+        background color has been defined. Then, it asks each of the
+        contained elements to draw itself.
 
         Note:
-            Les coordonnées du conteneur et les coordonnées des éléments sont
-            indépendantes.
+            The coordinates of the container and the coordinates of the elements are
+            independent.
 
         """
-        # Colorie le fond du conteneur si une couleur de fond a été définie
+        # Colors the container background if a background color has been defined
         if self.fond != None:
             for posy in range(self.posy, self.posy + self.hauteur):
                 self.minitel.position(self.posx, posy)
                 self.minitel.couleur(fond = self.fond)
                 self.minitel.repeter(' ', self.largeur)
 
-        # Demande à chaque élément de s’afficher
+        # Asks each element to display itself
         for element in self.elements:
             element.affiche()
 
-        # Si un élément actif a été défini, on lui donne la main
+        # If an active element has been defined, we give it control
         if self.element_actif != None:
             self.element_actif.gere_arrivee()
 
     def ajoute(self, element):
-        """Ajout d’un élément au conteneur
+        """Adds an element to the container
 
-        Le conteneur maintient une liste ordonnées de ses éléments.
+        The container maintains an ordered list of its elements.
 
-        Quand un élément est ajouté, si sa couleur n’a pas été définie, il
-        prend celle du conteneur.
+        When an element is added, if its color has not been defined, it
+        takes that of the container.
 
-        Si aucun élément du conteneur n’est actif et que l’élément ajouté est
-        activable, il devient automatiquement l’élément actif pour le
-        conteneur.
+        If no element of the container is active and the added element is
+        activable, it automatically becomes the active element for the
+        container.
 
         :param element:
-            l’élément à ajouter à la liste ordonnée.
+            the element to add to the ordered list.
         
         :type element:
-            un objet de classe UI ou de ses descendantes.
+            an object of class UI or its descendants.
         """
         assert isinstance(element, UI)
         assert element not in self.elements
 
-        # Attribue la couleur du conteneur à l’élément par défaut
+        # Assigns the container's color to the element by default
         if element.couleur == None:
             element.couleur = self.couleur
 
-        # Ajoute l’élément à la liste d’éléments du conteneur
+        # Adds the element to the container's list of elements
         self.elements.append(element)
 
         if self.element_actif == None and element.activable == True:
             self.element_actif = element
 
     def suivant(self):
-        """Passe à l’élément actif suivant
+        """Moves to the next active element
 
-        Cette méthode sélectionne le prochain élément activable dans la liste
-        à partir de l’élément actif.
+        This method selects the next activable element in the list
+        from the active element.
 
         :returns:
-            True si un élément actif suivant a été trouvé et sélectionné,
-            False sinon.
+            True if a next active element was found and selected,
+            False otherwise.
         """
-        # S’il n’y a pas d’éléments, il ne peut pas y avoir d’élément actif
+        # If there are no elements, there can be no active element
         if len(self.elements) == 0:
             return False
 
-        # Récupère l’index de l’élément actif
+        # Gets the index of the active element
         if self.element_actif == None:
             index = -1
         else:
             index = self.elements.index(self.element_actif)
 
-        # Recherche l’élément suivant qui soit activable
+        # Searches for the next element that is activable
         while index < len(self.elements) - 1:
             index += 1
             if self.elements[index].activable == True:
@@ -225,26 +225,26 @@ class Conteneur(UI):
         return False
 
     def precedent(self):
-        """Passe à l’élément actif précédent
+        """Moves to the previous active element
 
-        Cette méthode sélectionne l’élément activable précédent dans la liste
-        à partir de l’élément actif.
+        This method selects the previous activable element in the list
+        from the active element.
 
         :returns:
-            True si un élément actif précédent a été trouvé et sélectionné,
-            False sinon.
+            True if a previous active element was found and selected,
+            False otherwise.
         """
-        # S’il n’y a pas d’éléments, il ne peut pas y avoir d’élément actif
+        # If there are no elements, there can be no active element
         if len(self.elements) == 0:
             return False
 
-        # Récupère l’index de l’élément actif
+        # Gets the index of the active element
         if self.element_actif == None:
             index = len(self.elements)
         else:
             index = self.elements.index(self.element_actif)
 
-        # Recherche l’élément suivant qui soit activable
+        # Searches for the next element that is activable
         while index > 0:
             index -= 1
             if self.elements[index].activable == True:

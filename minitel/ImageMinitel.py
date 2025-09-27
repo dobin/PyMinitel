@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""ImageMinitel est une classe permettant de convertir une image lisible par
-PIL en semi-graphiques pour le Minitel.
+"""ImageMinitel is a class for converting an image readable by
+PIL into semi-graphics for the Minitel.
 
 """
 
@@ -13,21 +13,21 @@ from minitel.Minitel import Minitel
 from math import sqrt
 
 def _huit_niveaux(niveau):
-    """Convertit un niveau sur 8 bits (256 valeurs possibles) en un niveau
-    sur 3 bits (8 valeurs possibles).
+    """Converts a level on 8 bits (256 possible values) into a level
+    on 3 bits (8 possible values).
 
     :param niveau:
-        Niveau à convertir. Si c’est un tuple qui est fourni, la luminosité de
-        la couleur est alors calculée. La formule est issue de la page
+        Level to convert. If a tuple is provided, the brightness of
+        the color is then calculated. The formula is from the page
         http://alienryderflex.com/hsp.html
     :type niveau:
-        un tuple ou un entier
+        a tuple or an integer
 
     :returns:
-        Un entier compris entre 0 et 7 inclus.
+        An integer between 0 and 7 inclusive.
     """
-    # Niveau peut soit être un tuple soit un entier
-    # Gère les deux cas en testant l’exception
+    # Level can be either a tuple or an integer
+    # Handles both cases by testing the exception
     try:
         return niveau * 8 / 256
     except TypeError:
@@ -42,65 +42,65 @@ def _huit_niveaux(niveau):
         )
 
 def _deux_couleurs(couleurs):
-    """Réduit une liste de couleurs à un couple de deux couleurs.
+    """Reduces a list of colors to a pair of two colors.
 
-    Les deux couleurs retenues sont les couleurs les plus souvent
-    présentes.
+    The two colors retained are the most frequently
+    present colors.
 
     :param couleurs:
-        Les couleurs à réduire. Chaque couleur doit être un entier compris
-        entre 0 et 7 inclus.
+        The colors to reduce. Each color must be an integer between
+        0 and 7 inclusive.
     :type couleurs:
-        Une liste d’entiers
+        A list of integers
 
     :returns:
-        Un tuple de deux entiers représentant les couleurs sélectionnées.
+        A tuple of two integers representing the selected colors.
     """
     assert isinstance(couleurs, list)
 
-    # Crée une liste contenant le nombre de fois où un niveau est
-    # enregistré
+    # Creates a list containing the number of times a level is
+    # recorded
     niveaux = [0, 0, 0, 0, 0, 0, 0, 0]
 
-    # Passe en revue tous les niveaux pour les comptabiliser
+    # Goes through all the levels to count them
     for couleur in couleurs:
         niveaux[couleur] += 1
 
-    # Prépare la liste des niveaux afin de pouvoir la trier du plus
-    # utilisé au moins utilisé. Pour cela, on crée une liste de tuples
-    # (niveau, nombre d’apparitions)
+    # Prepares the list of levels in order to be able to sort it from the most
+    # used to the least used. To do this, we create a list of tuples
+    # (level, number of appearances)
     niveaux = [(index, valeur) for index, valeur in enumerate(niveaux)]
 
-    # Trie les niveaux par nombre d’apparition
+    # Sorts the levels by number of appearances
     niveaux = sorted(niveaux, key = itemgetter(1), reverse = True)
 
-    # Retourne les deux niveaux les plus rencontrés
+    # Returns the two most encountered levels
     return (niveaux[0][0], niveaux[1][0])
 
 def _arp_ou_avp(couleur, arp, avp):
-    """Convertit une couleur en couleur d’arrière-plan ou d’avant-plan.
+    """Converts a color into a background or foreground color.
 
-    La conversion se fait en calculant la proximité de la couleur avec la
-    couleur d’arrière-plan (arp) et avec la couleur d’avant-plan (avp).
+    The conversion is done by calculating the proximity of the color with the
+    background color (arp) and with the foreground color (avp).
 
     :param couleur:
-        La couleur à convertir (valeur de 0 à 7 inclus).
+        The color to convert (value from 0 to 7 inclusive).
     :type couleur:
-        un entier
+        an integer
 
     :param arp:
-        La couleur d’arrière-plan (valeur de 0 à 7 inclus)
+        The background color (value from 0 to 7 inclusive)
     :type arp:
-        un entier
+        an integer
 
     :param avp:
-        La couleur d’avant-plan (valeur de 0 à 7 inclus)
+        The foreground color (value from 0 to 7 inclusive)
     :type avp:
-        un entier
+        an integer
 
     :returns:
-        0 si la couleur est plus proche de la couleur d’arrière-plan, 1 si
-        la couleur est plus proche de la couleur d’avant-plan.
+        0 if the color is closer to the background color, 1 if
+        the color is closer to the foreground color.
     """
     assert isinstance(couleur, int)
     assert isinstance(arp, int)
@@ -112,18 +112,18 @@ def _arp_ou_avp(couleur, arp, avp):
     return 1
 
 def _minitel_arp(niveau):
-    """Convertit un niveau en une séquence de codes Minitel définissant la
-    couleur d’arrière-plan.
+    """Converts a level into a sequence of Minitel codes defining the
+    background color.
 
     :param niveau:
-        Le niveau à convertir (valeur de 0 à 7 inclus).
+        The level to convert (value from 0 to 7 inclusive).
     :type niveau:
-        un entier
+        an integer
 
     :returns:
-        Un objet de type Sequence contenant la séquence à envoyer au
-        Minitel pour avec une couleur d’arrière-plan correspondant au
-        niveau.
+        A Sequence object containing the sequence to send to the
+        Minitel for a background color corresponding to the
+        level.
     """
     assert isinstance(niveau, int)
 
@@ -133,17 +133,17 @@ def _minitel_arp(niveau):
         return Sequence([ESC, 0x50])
 
 def _minitel_avp(niveau):
-    """Convertit un niveau en une séquence de codes Minitel définissant la
-    couleur d’avant-plan.
+    """Converts a level into a sequence of Minitel codes defining the
+    foreground color.
 
     :param niveau:
-        Le niveau à convertir (valeur de 0 à 7 inclus).
+        The level to convert (value from 0 to 7 inclusive).
     :type niveau:
-        un entier
+        an integer
 
     :returns:
-        Un objet de type Sequence contenant la séquence à envoyer au
-        Minitel pour avec une couleur d’avant-plan correspondant au niveau.
+        A Sequence object containing the sequence to send to the
+        Minitel for a foreground color corresponding to the level.
     """
     assert isinstance(niveau, int)
 
@@ -153,40 +153,40 @@ def _minitel_avp(niveau):
         return Sequence([ESC, 0x47])
 
 class ImageMinitel:
-    """Une classe de gestion d’images Minitel avec conversion depuis une image
-    lisible par PIL.
+    """A class for managing Minitel images with conversion from an image
+    readable by PIL.
 
-    Cette classe gère une image au sens Minitel du terme, c’est à dire par
-    l’utilisation du mode semi-graphique dans lequel un caractère contient
-    une combinaison de 2×3 pixels. Cela donne une résolution maximale de 80×72
+    This class manages an image in the Minitel sense of the term, that is to say by
+    the use of the semi-graphic mode in which a character contains
+    a combination of 2×3 pixels. This gives a maximum resolution of 80×72
     pixels.
     
-    Hormis la faible résolution ainsi obtenue, le mode semi-graphique présente
-    plusieurs inconvénients par rapport à un véritable mode graphique :
+    Apart from the low resolution thus obtained, the semi-graphic mode has
+    several disadvantages compared to a true graphic mode:
 
-    - il ne peut y avoir que 2 couleurs par bloc de 2×3 pixels,
-    - les pixels ne sont pas carrés
+    - there can only be 2 colors per 2×3 pixel block,
+    - the pixels are not square
     """
 
     def __init__(self, minitel, disjoint = False):
-        """Constructeur
+        """Constructor
 
         :param minitel:
-            L’objet auquel envoyer les commandes
+            The object to which to send the commands
         :type minitel:
-            un objet Minitel
+            a Minitel object
         :param disjoint:
-            Active le mode disjoint pour les images.
+            Activates disjoint mode for images.
         :type disjoint:
-            un booléen
+            a boolean
         """
         assert isinstance(minitel, Minitel)
         assert isinstance(disjoint, bool)
 
         self.minitel = minitel
 
-        # L’image est stockées sous forme de Sequences afin de pouvoir
-        # l’afficher à n’importe quelle position sur l’écran
+        # The image is stored as Sequences in order to be able to
+        # display it at any position on the screen
         self.sequences = []
 
         self.largeur = 0
@@ -194,22 +194,22 @@ class ImageMinitel:
         self.disjoint = disjoint
 
     def envoyer(self, colonne = 1, ligne = 1):
-        """Envoie l’image sur le Minitel à une position donnée
+        """Sends the image to the Minitel at a given position
 
-        Sur le Minitel, la première colonne a la valeur 1. La première ligne
-        a également la valeur 1 bien que la ligne 0 existe. Cette dernière
-        correspond à la ligne d’état et possède un fonctionnement différent
-        des autres lignes.
+        On the Minitel, the first column has the value 1. The first line
+        also has the value 1 although line 0 exists. The latter
+        corresponds to the status line and has a different operation
+        from the other lines.
 
         :param colonne:
-            colonne à laquelle positionner le coin haut gauche de l’image
+            column at which to position the top left corner of the image
         :type colonne:
-            un entier
+            an integer
 
         :param ligne:
-            ligne à laquelle positionner le coin haut gauche de l’image
+            line at which to position the top left corner of the image
         :type ligne:
-            un entier
+            an integer
         """
         assert isinstance(colonne, int)
         assert isinstance(ligne, int)
@@ -220,45 +220,45 @@ class ImageMinitel:
             ligne += 1
 
     def importer(self, image):
-        """Importe une image de PIL et crée les séquences de code Minitel
-        correspondantes. L’image fournie doit avoir été réduite à des
-        dimensions inférieures ou égales à 80×72 pixels. La largeur doit être
-        un multiple de 2 et la hauteur un multiple de 3.
+        """Imports an image from PIL and creates the corresponding Minitel code
+        sequences. The supplied image must have been reduced to
+        dimensions less than or equal to 80×72 pixels. The width must be
+        a multiple of 2 and the height a multiple of 3.
 
         :param image:
-            L’image à importer.
+            The image to import.
         :type niveau:
-            une Image
+            an Image
         """
         assert image.size[0] <= 80
         assert image.size[1] <= 72
 
-        # En mode semi-graphique, un caractère a 2 pixels de largeur
-        # et 3 pixels de hauteur
+        # In semi-graphic mode, a character is 2 pixels wide
+        # and 3 pixels high
         self.largeur = int(image.size[0] / 2)
         self.hauteur = int(image.size[1] / 3)
 
-        # Initialise la liste des séquences
+        # Initializes the list of sequences
         self.sequences = []
 
         for hauteur in range(0, self.hauteur):
-            # Variables pour l’optimisation du code généré
+            # Variables for optimizing the generated code
             old_arp = -1
             old_avp = -1
             old_alpha = 0
             compte = 0
 
-            # Initialise une nouvelle séquence
+            # Initializes a new sequence
             sequence = Sequence()
 
-            # Passe en mode semi-graphique
+            # Switches to semi-graphic mode
             sequence.ajoute(SO)
 
             if self.disjoint:
                 sequence.ajoute([ESC, 0x5A])
 
             for largeur in range(0, self.largeur):
-                # Récupère 6 pixels
+                # Retrieves 6 pixels
                 pixels = [
                     image.getpixel((largeur * 2 + x, hauteur * 3 + y))
                     for x, y in [(0, 0), (1, 0),
@@ -267,7 +267,7 @@ class ImageMinitel:
                 ]
 
                 if self.disjoint:
-                    # Convertit chaque couleur de pixel en deux niveaux de gris
+                    # Converts each pixel color into two gray levels
                     pixels = [_huit_niveaux(pixel) for pixel in pixels]
 
                     arp, avp = _deux_couleurs(pixels)
@@ -276,19 +276,19 @@ class ImageMinitel:
                         arp, avp = 0, arp
 
                 else:
-                    # Convertit chaque couleur de pixel en huit niveau de gris
+                    # Converts each pixel color into eight gray levels
                     pixels = [_huit_niveaux(pixel) for pixel in pixels]
 
-                    # Recherche les deux couleurs les plus fréquentes
-                    # un caractère ne peut avoir que deux couleurs !
+                    # Searches for the two most frequent colors
+                    # a character can only have two colors!
                     arp, avp = _deux_couleurs(pixels)
 
-                # Réduit à deux le nombre de couleurs dans un bloc de 6 pixels
-                # Cela peut faire apparaître des artefacts mais est inévitable
+                # Reduces the number of colors in a 6-pixel block to two
+                # This can cause artifacts but is unavoidable
                 pixels = [_arp_ou_avp(pixel, arp, avp) for pixel in pixels]
 
-                # Convertit les 6 pixels en un caractère mosaïque du minitel
-                # Le caractère est codé sur 7 bits
+                # Converts the 6 pixels into a Minitel mosaic character
+                # The character is coded on 7 bits
                 bits = [
                     '0',
                     str(pixels[5]),
@@ -300,25 +300,25 @@ class ImageMinitel:
                     str(pixels[0])
                 ]
 
-                # Génère l’octet (7 bits) du caractère mosaïque
+                # Generates the byte (7 bits) of the mosaic character
                 alpha = int(''.join(bits), 2)
 
-                # Si les couleurs du précédent caractères sont inversés,
-                # inverse le caractère mosaïque. Cela évite d’émettre
-                # à nouveau des codes couleurs. Cela fonctionne uniquement
-                # lorsque le mode disjoint n’est pas actif
+                # If the colors of the previous character are inverted,
+                # inverts the mosaic character. This avoids re-emitting
+                # color codes. This only works
+                # when disjoint mode is not active
                 if not self.disjoint and old_arp == avp and old_avp == arp:
-                    # Inverse chaque bit à l’exception du 6e et du 8e
+                    # Inverts each bit except the 6th and 8th
                     alpha = alpha ^ 0b01011111
                     avp, arp = arp, avp
                     
                 if old_arp == arp and old_avp == avp and alpha == old_alpha:
-                    # Les précédents pixels sont identiques, on le retient
-                    # pour utiliser un code de répétition plus tard
+                    # The previous pixels are identical, we remember it
+                    # to use a repetition code later
                     compte += 1
                 else:
-                    # Les pixels ont changé, mais il peut y avoir des pixels
-                    # qui n’ont pas encore été émis pour cause d’optimisation
+                    # The pixels have changed, but there may be pixels
+                    # that have not yet been emitted for optimization reasons
                     if compte > 0:
                         if compte == 1:
                             sequence.ajoute(old_alpha)
@@ -327,14 +327,14 @@ class ImageMinitel:
 
                         compte = 0
 
-                    # Génère les codes Minitel
+                    # Generates the Minitel codes
                     if old_arp != arp:
-                        # L’arrière-plan a changé
+                        # The background has changed
                         sequence.ajoute(_minitel_arp(arp))
                         old_arp = arp
 
                     if old_avp != avp:
-                        # L’avant-plan a changé
+                        # The foreground has changed
                         sequence.ajoute(_minitel_avp(avp))
                         old_avp = avp
 
@@ -352,6 +352,6 @@ class ImageMinitel:
             if self.disjoint:
                 sequence.ajoute([ESC, 0x59])
 
-            # Une ligne vient d’être terminée, on la stocke dans la liste des
-            # séquences
+            # A line has just been finished, we store it in the list of
+            # sequences
             self.sequences.append(sequence)

@@ -1,66 +1,67 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Base pour la création d’une interface utilisateur pour le Minitel"""
+"""Base for creating a user interface for the Minitel"""
 
 from ..Minitel import Minitel,Empty
+from typing import Union
 
 class UI:
-    """Classe de base pour la création d’élément d’interface utilisateur
+    """Base class for creating user interface elements
 
-    Cette classe fournit un cadre de fonctionnement pour la création d’autres
-    classes pour réaliser une interface utilisateur.
+    This class provides a framework for creating other
+    classes to create a user interface.
 
-    Elle instaure les attributs suivants :
+    It establishes the following attributes:
 
-    - posx et posy : coordonnées haut gauche de l’élément
-    - largeur et hauteur : dimensions en caractères de l’élément
-    - minitel : un objet Minitel utilisé pour l’affichage de l’élément
-    - couleur : couleur d’avant-plan/des caractères
-    - activable : booléen indiquant si l’élément peut recevoir les événements
-      du Minitel (clavier)
+    - posx and posy: top-left coordinates of the element
+    - largeur and hauteur: dimensions in characters of the element
+    - minitel: a Minitel object used for displaying the element
+    - couleur: foreground/character color
+    - activable: boolean indicating if the element can receive Minitel
+      events (keyboard)
 
-    Les classes dérivées de UI doivent implémenter les méthodes suivantes :
-    - __init__ : initialisation de l’objet
-    - affiche : affichage de l’objet
-    - efface : effacement de l’objet
-    - gere_touche : gestion de l’appui d’une touche (si l’élément est activable)
-    - gere_arrivee : gestion de l’activation de l’élément
-    - gere_depart : gestion de la désactivation de l’élément
+    Classes derived from UI must implement the following methods:
+    - __init__: object initialization
+    - affiche: object display
+    - efface: object erasure
+    - gere_touche: key press management (if the element is activable)
+    - gere_arrivee: element activation management
+    - gere_depart: element deactivation management
 
     """
     def __init__(self, minitel, posx, posy, largeur, hauteur, couleur):
-        """Constructeur
+        """Constructor
 
         :param minitel:
-            L’objet auquel envoyer les commandes et recevoir les appuis de
-            touche.
+            The object to which to send commands and receive key
+            presses.
         :type minitel:
-            un objet Minitel
+            a Minitel object
 
         :param posx:
-            Coordonnée x de l’élément
+            x-coordinate of the element
         :type posx:
-            un entier
+            an integer
 
         :param posy:
-            Coordonnée y de l’élément
+            y-coordinate of the element
         :type posy:
-            un entier
+            an integer
         
         :param largeur:
-            Largeur de l’élément en caractères
+            Width of the element in characters
         :type largeur:
-            un entier
+            an integer
         
         :param hauteur:
-            Hauteur de l’élément en caractères
+            Height of the element in characters
         :type hauteur:
-            un entier
+            an integer
         
         :param couleur:
-            Couleur de l’élément
+            Color of the element
         :type couleur:
-            un entier ou une chaîne de caractères
+            an integer or a string
         """
         assert isinstance(minitel, Minitel)
         assert posx > 0 and posx <= 80
@@ -69,92 +70,93 @@ class UI:
         assert hauteur > 0 and hauteur + posy - 1 <= 80
         assert isinstance(couleur, (int, str)) or couleur == None
 
-        # Un élément UI est toujours rattaché à un objet Minitel
+        # A UI element is always attached to a Minitel object
         self.minitel = minitel
 
-        # Un élément UI occupe une zone rectangulaire de l’écran du Minitel
+        # A UI element occupies a rectangular area of the Minitel screen
         self.posx = posx
         self.posy = posy
         self.largeur = largeur
         self.hauteur = hauteur
         self.couleur = couleur
 
-        # Un élément UI peut recevoir ou non les événements clavier
-        # Par défaut, il ne les reçoit pas
+        # A UI element may or may not receive keyboard events
+        # By default, it does not receive them
         self.activable = False
 
     def executer(self):
-        """Boucle d’exécution d’un élément
+        """Execution loop of an element
 
-        L’appel de cette méthode permet de lancer une boucle infinie qui va
-        gérer l’appui des touches (méthode gere_touche) provenant du Minitel.
-        Dès qu’une touche n’est pas gérée par l’élément, la boucle s’arrête.
+        Calling this method starts an infinite loop that will
+        manage key presses (gere_touche method) from the Minitel.
+        As soon as a key is not handled by the element, the loop stops.
         """
         while True:
             try:
                 r = self.minitel.recevoir_sequence(attente=30)
-                self.gere_touche(r)
+                if not self.gere_touche(r):
+                    break
             except Empty :
                 pass
 
     def affiche(self):
-        """Affiche l’élément
+        """Displays the element
 
-        Cette méthode est appelée dès que l’on veut afficher l’élément.
+        This method is called as soon as we want to display the element.
         """
         pass
 
     def efface(self):
-        """Efface l’élément
+        """Erases the element
 
-        Cette méthode est appelée dès que l’on veut effacer l’élément. Par
-        défaut elle affiche un rectangle contenant des espaces à la place de
-        l’élément. Elle peut être surchargée pour obtenir une gestion plus
-        poussée de l’affichage.
+        This method is called as soon as we want to erase the element. By
+        default, it displays a rectangle containing spaces instead of
+        the element. It can be overridden to obtain more
+        advanced display management.
         """
         for ligne in range(self.posy, self.posy + self.hauteur):
             self.minitel.position(self.posx, ligne)
             self.minitel.repeter(' ', self.largeur)
 
-    # Désactive un faux positif. Il est normal que cette méthode n’utilise
-    # pas l’argument sequence et qu’elle soit une méthode plutôt qu’une
-    # fonction
+    # Disables a false positive. It is normal for this method not to use
+    # the sequence argument and for it to be a method rather than a
+    # function
     # pylint: disable-msg=W0613,R0201
-    def gere_touche(self, sequence):
-        """Gère une touche
+    def gere_touche(self, sequence) -> bool:
+        """Handles a key press
 
-        Cette méthode est appelée automatiquement par la méthode executer dès
-        qu’une séquence est disponible au traitement.
+        This method is called automatically by the executer method as soon
+        as a sequence is available for processing.
 
-        Pour tout élément interactif, cette méthode doit être surchargée car
-        elle ne traite aucune touche par défaut et renvoie donc False.
+        For any interactive element, this method must be overridden because
+        it does not handle any keys by default and therefore returns False.
 
         :param sequence:
-            la séquence de caractères en provenance du Minitel que l’élément
-            doit traiter.
+            the character sequence from the Minitel that the element
+            must process.
         :type sequence:
-            un objet Sequence
+            a Sequence object
 
         :returns:
-            un booléen indiquant si la touche a été prise en charge par
-            l’élément (True) ou si l’élément n’a pas pu traitée la touche
+            a boolean indicating whether the key was handled by
+            the element (True) or if the element could not process the key
             (False).
         """
         return False
 
     def gere_arrivee(self):
-        """Gère l’activation de l’élément
+        """Manages the activation of the element
 
-        Cette méthode est appelée lorsque l’élément est activé (lorsqu’il
-        reçoit les touches du clavier).
+        This method is called when the element is activated (when it
+        receives keyboard keys).
         """
         pass
 
     def gere_depart(self):
-        """Gère la désactivation de l’élément
+        """Manages the deactivation of the element
 
-        Cette méthode est appelée lorsque l’élément est désactivé (lorsqu’il ne
-        reçoit plus les touches du clavier).
+        This method is called when the element is deactivated (when it no
+        longer receives keyboard keys).
         """
         pass
 

@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Minitel est un module permettant de piloter un Minitel depuis un script
-écrit en Python.
+"""Minitel is a module for controlling a Minitel from a Python script.
 """
 
-from serial import Serial      # Liaison physique avec le Minitel
-from threading import Thread   # Threads pour l’émission/réception
-from queue import Queue, Empty # Files de caractères pour l’émission/réception
+from serial import Serial      # Physical link with the Minitel
+from threading import Thread   # Threads for sending/receiving
+from queue import Queue, Empty # Character queues for sending/receiving
 
-from minitel.Sequence import Sequence # Gestion des séquences de caractères
+from minitel.Sequence import Sequence # Manages character sequences
 
 from minitel.constantes import (SS2, SEP, ESC, CSI, PRO1, PRO2, PRO3, MIXTE1,
     MIXTE2, TELINFO, ENQROM, SOH, EOT, TYPE_MINITELS, STATUS_FONCTIONNEMENT,
@@ -19,27 +18,27 @@ from minitel.constantes import (SS2, SEP, ESC, CSI, PRO1, PRO2, PRO3, MIXTE1,
     CAPACITES_BASIQUES, CONSTRUCTEURS)
 
 def normaliser_couleur(couleur):
-    """Retourne le numéro de couleur du Minitel.
+    """Returns the Minitel color number.
 
-    À partir d’une couleur fournie sous la forme d’une chaîne avec le
-    nom de la couleur en français ou un entier indiquant un niveau de
-    gris, cette fonction retourne le numéro de la couleur correspondante
-    pour le Minitel.
+    From a color provided as a string with the
+    name of the color in French or an integer indicating a level of
+    gray, this function returns the corresponding color number
+    for the Minitel.
 
     :param couleur:
-        Les valeurs acceptées sont noir, rouge, vert, jaune, bleu,
-        magenta, cyan, blanc, et les entiers de 0 (noir) à 7 (blanc)
+        Accepted values are noir, rouge, vert, jaune, bleu,
+        magenta, cyan, blanc, and integers from 0 (black) to 7 (white)
     :type couleur:
-        une chaîne de caractères ou un entier
+        a string or an integer
 
     :returns:
-        Le numéro de la couleur correspondante sur le Minitel ou None si
-        la couleur demandée n’est pas valide.
+        The corresponding color number on the Minitel or None if
+        the requested color is not valid.
     """
     assert isinstance(couleur, (str, int))
 
-    # On convertit la couleur en chaîne de caractères pour que l’appelant
-    # puisse utiliser indifféremment '0' (str) ou 0 (int).
+    # The color is converted to a string so that the caller
+    # can use '0' (str) or 0 (int) interchangeably.
     couleur = str(couleur)
 
     if couleur in COULEURS_MINITEL:
@@ -48,43 +47,43 @@ def normaliser_couleur(couleur):
     return None
 
 class Minitel:
-    """Une classe de pilotage du Minitel via un port série
+    """A class for controlling the Minitel via a serial port
 
-    Présentation
+    Introduction
     ============
 
-    La classe Minitel permet d’envoyer et de recevoir des séquences de
-    caractères vers et depuis un Minitel dans un programme écrit en Python.
-    Elle fonctionne via une liaison série entre l’ordinateur et le Minitel.
+    The Minitel class allows sending and receiving character sequences
+    to and from a Minitel in a Python program.
+    It works via a serial link between the computer and the Minitel.
 
-    Par défaut, elle utilise /dev/ttyUSB0 comme périphérique. En effet, l’une
-    des manières les plus simples de relier un Minitel à un ordinateur
-    consiste à utiliser un câble USB-TTL 5v (PL2303) car la prise
-    péri-informatique du Minitel fonctionne en TTL (0v/5v) et non en RS232
-    (-12v/12v). Ce type de câble embarque un composant qui est reconnu
-    automatiquement par les noyaux Linux et est assigné à /dev/ttyUSB*. Sous
-    Android, le noyau Linux ne dispose pas du pilote en standard.
+    By default, it uses /dev/ttyUSB0 as the device. Indeed, one
+    of the easiest ways to connect a Minitel to a computer
+    is to use a 5v USB-TTL cable (PL2303) because the
+    Minitel's peripheral socket works in TTL (0v/5v) and not in RS232
+    (-12v/12v). This type of cable embeds a component that is recognized
+    automatically by Linux kernels and is assigned to /dev/ttyUSB*. Under
+    Android, the Linux kernel does not have the driver as standard.
 
-    Tant que le périphérique sélectionné est un périphérique série, cette
-    classe ne devrait pas poser de problème pour communiquer avec le Minitel.
-    Par exemple, il est tout à fait possible de créer un proxy série en
-    utilisant un Arduino relié en USB à l’ordinateur et dont certaines
-    broches seraient relié au Minitel.
+    As long as the selected device is a serial device, this
+    class should not pose any problem for communicating with the Minitel.
+    For example, it is entirely possible to create a serial proxy by
+    using an Arduino connected via USB to the computer and whose
+    pins would be connected to the Minitel.
 
-    La classe Minitel permet de déterminer la vitesse de fonctionnement du
-    Minitel, d’identifier le modèle, de le configurer et d’envoyer et recevoir
-    des séquences de caractères.
+    The Minitel class allows determining the operating speed of the
+    Minitel, identifying the model, configuring it, and sending and receiving
+    character sequences.
 
-    Compte tenu de son fonctionnement en threads, le programme principal
-    utilisant cette classe n’a pas à se soucier d’être disponible pour recevoir
-    les séquences de caractères envoyées par le Minitel.
+    Given its threaded operation, the main program
+    using this class does not have to worry about being available to receive
+    the character sequences sent by the Minitel.
 
-    Démarrage rapide
+    Quick Start
     ================
 
-    Le cycle de vie d’un objet Minitel consiste en la création, la
-    détermination de la vitesse du Minitel, de ses capacités, l’utilisation
-    du Minitel par l’application et la libération des ressources::
+    The lifecycle of a Minitel object consists of creation,
+    determining the Minitel's speed, its capabilities, the use
+    of the Minitel by the application, and the release of resources::
         
         from minitel.Minitel import Minitel
 
@@ -94,173 +93,173 @@ class Minitel:
         minitel.identifier()
 
         # ...
-        # Utilisation de l’objet minitel
+        # Use of the minitel object
         # ...
 
         minitel.close()
 
     """
-    def __init__(self, peripherique = '/dev/ttyUSB0'):
-        """Constructeur de Minitel
+    def __init__(self, peripherique = 'COM3'):
+        """Minitel constructor
 
-        La connexion série est établie selon le standard de base du Minitel.
-        À l’allumage le Minitel est configuré à 1200 bps, 7 bits, parité paire,
-        mode Vidéotex.
+        The serial connection is established according to the Minitel's basic standard.
+        When switched on, the Minitel is configured at 1200 bps, 7 bits, even parity,
+        Videotex mode.
 
-        Cela peut ne pas correspondre à la configuration réelle du Minitel au
-        moment de l’exécution. Cela n’est toutefois pas un problème car la
-        connexion série peut être reconfigurée à tout moment.
+        This may not correspond to the actual configuration of the Minitel at
+        the time of execution. However, this is not a problem because the
+        serial connection can be reconfigured at any time.
 
         :param peripherique:
-            Le périphérique sur lequel est connecté le Minitel.Par défaut, le
-            périphérique est /dev/ttyUSB0
+            The device to which the Minitel is connected. By default, the
+            device is /dev/ttyUSB0
         :type peripherique:
             String
     
         """
         assert isinstance(peripherique, str)
 
-        # Initialise l’état du Minitel
+        # Initializes the Minitel's state
         self.mode = 'VIDEOTEX'
         self.vitesse = 1200
 
-        # Initialise la liste des capacités du Minitel
+        # Initializes the list of Minitel capabilities
         self.capacite = CAPACITES_BASIQUES
 
-        # Crée les deux files d’attente entrée/sortie
+        # Creates the two input/output queues
         self.entree = Queue()
         self.sortie = Queue()
 
-        # Initialise la connexion avec le Minitel
+        # Initializes the connection with the Minitel
         self._minitel = Serial(
             peripherique,
-            baudrate = 1200, # vitesse à 1200 bps, le standard Minitel
-            bytesize = 7,    # taille de caractère à 7 bits
-            parity   = 'E',  # parité paire
-            stopbits = 1,    # 1 bit d’arrêt
-            timeout  = 1,    # 1 bit de timeout
-            xonxoff  = 0,    # pas de contrôle logiciel
-            rtscts   = 0     # pas de contrôle matériel
+            baudrate = 1200, # 1200 bps speed, the Minitel standard
+            bytesize = 7,    # 7-bit character size
+            parity   = 'E',  # even parity
+            stopbits = 1,    # 1 stop bit
+            timeout  = 1,    # 1 second timeout
+            xonxoff  = False,    # no software control
+            rtscts   = False     # no hardware control
         )
 
-        # Initialise un drapeau pour l’arrêt des threads
-        # (les threads partagent les mêmes variables que le code principal)
+        # Initializes a flag to stop the threads
+        # (threads share the same variables as the main code)
         self._continuer = True
 
-        # Crée les deux threads de lecture/écriture
+        # Creates the two read/write threads
         self._threads = []
         self._threads.append(Thread(None, self._gestion_entree, None, ()))
         self._threads.append(Thread(None, self._gestion_sortie, None, ()))
 
-        # Démarre les deux threads de lecture/écriture
+        # Starts the two read/write threads
         for thread in self._threads:
-            # Configure chaque thread en mode daemon
+            # Configures each thread in daemon mode
             thread.setDaemon(True)
             try:
-                # Lance le thread
+                # Starts the thread
                 thread.start()
             except (KeyboardInterrupt, SystemExit):
                 self.close()
 
     def close(self):
-        """Ferme la connexion avec le Minitel
+        """Closes the connection with the Minitel
 
-        Indique aux threads d’émission/réception qu’ils doivent s’arrêter et
-        attend leur arrêt. Comme les timeouts d’émission et de réception sont
-        réglés à 1 seconde, c’est le temps moyen que cette méthode mettra pour
-        s’exécuter.
+        Tells the send/receive threads that they should stop and
+        waits for them to stop. As the send and receive timeouts are
+        set to 1 second, this is the average time this method will take to
+        execute.
         """
-        # Indique aux threads qu’ils doivent arrêter toute activité
+        # Tells the threads that they should stop all activity
         self._continuer = False
 
-        # Attend que tous les threads aient fini
+        # Waits for all threads to finish
         for thread in self._threads:
             thread.join()
 
         self._minitel.close()
 
     def _gestion_entree(self):
-        """Gestion des séquences de caractères envoyées depuis le Minitel
+        """Manages character sequences sent from the Minitel
 
-        Cette méthode ne doit pas être appelée directement, elle est réservée
-        exclusivement à la classe Minitel. Elle boucle indéfiniment en tentant
-        de lire un caractère sur la connexion série.
+        This method should not be called directly, it is reserved
+        exclusively for the Minitel class. It loops indefinitely trying
+        to read a character on the serial connection.
         """
-        # Ajoute à la file entree tout ce que le Minitel peut envoyer
+        # Adds to the entree queue everything the Minitel can send
         while self._continuer:
-            # Attend un caractère pendant 1 seconde
+            # Waits for a character for 1 second
             caractere = self._minitel.read()
 
             if len(caractere) == 1:
                 self.entree.put(caractere)
 
     def _gestion_sortie(self):
-        """Gestion des séquences de caractères envoyées vers le Minitel
+        """Manages character sequences sent to the Minitel
 
-        Cette méthode ne doit pas être appelée directement, elle est réservée
-        exclusivement à la classe Minitel. Elle boucle indéfiniment en tentant
-        de lire un caractère sur la file de sortie.
+        This method should not be called directly, it is reserved
+        exclusively for the Minitel class. It loops indefinitely trying
+        to read a character from the output queue.
         """
-        # Envoie au Minitel tout ce qui se trouve dans la file sortie et
-        # continue de le faire tant que le drapeau continuer est à vrai
+        # Sends to the Minitel everything in the sortie queue and
+        # continues to do so as long as the continuer flag is true
         while self._continuer or not self.sortie.empty():
-            # Attend un caractère pendant 1 seconde
+            # Waits for a character for 1 second
             try:
                 sortie_unicode = self.sortie.get(block = True, timeout = 1)
                 self._minitel.write(sortie_unicode.encode())
 
-                # Attend que le caractère envoyé au minitel ait bien été envoyé
-                # car la sortie est bufferisée
+                # Waits for the character sent to the minitel to have been sent
+                # because the output is buffered
                 self._minitel.flush()
 
-                # Permet à la méthode join de la file de fonctionner
+                # Allows the queue's join method to work
                 self.sortie.task_done()
 
             except Empty:
                 continue
 
     def envoyer(self, contenu):
-        """Envoi de séquence de caractères 
+        """Sends a character sequence
 
-        Envoie une séquence de caractère en direction du Minitel.
+        Sends a character sequence towards the Minitel.
 
         :param contenu:
-            Une séquence de caractères interprétable par la classe Sequence.
+            A character sequence interpretable by the Sequence class.
         :type contenu:
-            un objet Sequence, une chaîne de caractères ou unicode, une liste,
-            un entier
+            a Sequence object, a string or unicode, a list,
+            an integer
         """
-        # Convertit toute entrée en objet Sequence
+        # Converts any input into a Sequence object
         if not isinstance(contenu, Sequence):
             contenu = Sequence(contenu)
 
-        # Ajoute les caractères un par un dans la file d’attente d’envoi
+        # Adds the characters one by one to the send queue
         for valeur in contenu.valeurs:
             self.sortie.put(chr(valeur))
 
     def recevoir(self, bloque = False, attente = None):
-        """Lit un caractère en provenance du Minitel
+        """Reads a character from the Minitel
 
-        Retourne un caractère présent dans la file d’attente de réception.
+        Returns a character present in the receive queue.
 
         :param bloque:
-            True pour attendre un caractère s’il n’y en a pas dans la
-            file d’attente de réception. False pour ne pas attendre et
-            retourner immédiatement.
+            True to wait for a character if there are none in the
+            receive queue. False to not wait and
+            return immediately.
         :type bloque:
-            un booléen
+            a boolean
 
         :param attente:
-            attente en secondes, valeurs en dessous de la seconde
-            acceptées. Valide uniquement en mode bloque = True
-            Si attente = None et bloque = True, alors on attend
-            indéfiniment qu'un caractère arrive. 
+            wait in seconds, values below a second
+            accepted. Valid only in bloque = True mode
+            If attente = None and bloque = True, then we wait
+            indefinitely for a character to arrive.
         :type attente:
-            un entier, ou None
+            an integer, or None
 
-        :raise Empty: 
-            Lance une exception de type Empty si le bloque = True 
-            et que le temps d'attente a été dépassé
+        :raise Empty:
+            Raises an Empty exception if bloque = True
+            and the waiting time has been exceeded
         """
         assert bloque in [True, False]
         assert isinstance(attente, (int,float)) or attente == None
@@ -268,167 +267,166 @@ class Minitel:
         return self.entree.get(bloque, attente).decode()
 
     def recevoir_sequence(self,bloque = True, attente=None):
-        """Lit une séquence en provenance du Minitel
+        """Reads a sequence from the Minitel
 
-        Retourne un objet Sequence reçu depuis le Minitel. Cette fonction
-        analyse les envois du Minitel pour en faire une séquence consistante
-        du point de vue du Minitel. Par exemple, si le Minitel envoie un
-        caractère SS2, SEP ou ESC, celui-ci ne fait qu’annoncer une suite de
-        caractères désignant un résultat ou un caractère non existant dans la
-        norme ASCII. Par contre, le nombre de caractères pouvant être reçus
-        après des caractères spéciaux est normalisé. Cela permet de savoir
-        exactement le nombre de caractères qui vont constituer la séquence.
+        Returns a Sequence object received from the Minitel. This function
+        analyzes the Minitel's transmissions to make a consistent sequence
+        from the Minitel's point of view. For example, if the Minitel sends a
+        SS2, SEP or ESC character, it only announces a series of
+        characters designating a result or a character that does not exist in the
+        ASCII standard. On the other hand, the number of characters that can be received
+        after special characters is standardized. This allows to know
+        exactly the number of characters that will constitute the sequence.
 
-        C’est cette méthode qui doit être utilisée plutôt que la méthode
-        recevoir lorsqu’on dialogue avec le Minitel.
+        It is this method that should be used rather than the
+        recevoir method when communicating with the Minitel.
 
         :param bloque:
-            True pour attendre une séquence s’il n’y en a pas dans la
-            file d’attente de réception. False pour ne pas attendre et
-            retourner immédiatement.
+            True to wait for a sequence if there are none in the
+            receive queue. False to not wait and
+            return immediately.
         :type bloque:
-            un booléen
+            a boolean
 
         :param attente:
-            attente en secondes, valeurs en dessous de la seconde
-            acceptées. Valide uniquement en mode bloque = True
-            Si attente = None et bloque = True, alors on attend
-            indéfiniment qu'un caractère arrive. 
+            wait in seconds, values below a second
+            accepted. Valid only in bloque = True mode
+            If attente = None and bloque = True, then we wait
+            indefinitely for a character to arrive.
         :type attente:
-            un entier, ou None
+            an integer, or None
 
         :returns:
-            un objet Sequence
+            a Sequence object
         """
-        # Crée une séquence
+        # Creates a sequence
         sequence = Sequence()
 
-        # Ajoute le premier caractère lu à la séquence en mode bloquant
+        # Adds the first character read to the sequence in blocking mode
         sequence.ajoute(self.recevoir(bloque = bloque, attente = attente))
         assert sequence.longueur != 0
 
-        # Teste le caractère reçu
+        # Tests the received character
         if sequence.valeurs[-1] in [SS2, SEP]:
-            # Une séquence commençant par SS2 ou SEP aura une longueur de 2
+            # A sequence starting with SS2 or SEP will have a length of 2
             sequence.ajoute(self.recevoir(bloque = True))
         elif sequence.valeurs[-1] == ESC:
-            # Les séquences ESC ont des tailles variables allant de 1 à 4
+            # ESC sequences have variable sizes ranging from 1 to 4
             try:
-                # Essaie de lire un caractère avec un temps d’attente de 1/10s
-                # Cela permet de lire la touche la touche Esc qui envoie
-                # uniquement le code ESC sans rien après.
+                # Tries to read a character with a waiting time of 1/10s
+                # This allows reading the Esc key which sends
+                # only the ESC code with nothing after.
                 sequence.ajoute(self.recevoir(bloque = True, attente = 0.1))
 
-                # Une séquence CSI commence par ESC, 0x5b
+                # A CSI sequence starts with ESC, 0x5b
                 if sequence.valeurs == CSI:
-                    # Une séquence CSI appelle au moins 1 caractère
+                    # A CSI sequence calls for at least 1 character
                     sequence.ajoute(self.recevoir(bloque = True))
 
                     if sequence.valeurs[-1] in [0x32, 0x34]:
-                        # La séquence ESC, 0x5b, 0x32/0x34 appelle un dernier
-                        # caractère
+                        # The sequence ESC, 0x5b, 0x32/0x34 calls for a last
+                        # character
                         sequence.ajoute(self.recevoir(bloque = True))
             except Empty:
-                # Si aucun caractère n’est survenu après 1/10s, on continue
+                # If no character has occurred after 1/10s, we continue
                 pass
 
         return sequence
 
     def appeler(self, contenu, attente):
-        """Envoie une séquence au Minitel et attend sa réponse.
+        """Sends a sequence to the Minitel and waits for its response.
 
-        Cette méthode permet d’envoyer une commande au Minitel (configuration,
-        interrogation d’état) et d’attendre sa réponse. Cette fonction attend
-        au maximum 1 seconde avant d’abandonner. Dans ce cas, une séquence
-        vide est retournée.
+        This method allows sending a command to the Minitel (configuration,
+        status query) and waiting for its response. This function waits
+        at most 1 second before giving up. In this case, an empty sequence
+        is returned.
 
-        Avant de lancer la commande, la méthode vide la file d’attente en
-        réception.
+        Before launching the command, the method empties the receive queue.
 
         :param contenu:
-            Une séquence de caractères interprétable par la classe
-            Sequence
+            A character sequence interpretable by the Sequence
+            class
         :type contenu:
-            un objet Sequence, une chaîne de caractères, une chaîne unicode
-            ou un entier
+            a Sequence object, a string, a unicode string
+            or an integer
 
         :param attente:
-            Nombre de caractères attendu de la part du Minitel en
-            réponse à notre envoi.
+            Number of characters expected from the Minitel in
+            response to our sending.
         :type attente:
-            un entier
+            an integer
 
         :returns:
-            un objet Sequence contenant la réponse du Minitel à la commande
-            envoyée.
+            a Sequence object containing the Minitel's response to the command
+            sent.
         """
         assert isinstance(attente, int)
 
-        # Vide la file d’attente en réception
+        # Empties the receive queue
         self.entree = Queue()
 
-        # Envoie la séquence
+        # Sends the sequence
         self.envoyer(contenu)
 
-        # Attend que toute la séquence ait été envoyée
+        # Waits for the entire sequence to have been sent
         self.sortie.join()
 
-        # Tente de recevoir le nombre de caractères indiqué par le paramètre
-        # attente avec un délai d’1 seconde.
+        # Tries to receive the number of characters indicated by the attente
+        # parameter with a delay of 1 second.
         retour = Sequence()
         for _ in range(0, attente):
             try:
-                # Attend un caractère
+                # Waits for a character
                 entree_bytes = self.entree.get(block = True, timeout = 1)
                 retour.ajoute(entree_bytes.decode())
             except Empty:
-                # Si un caractère n’a pas été envoyé en moins d’une seconde,
-                # on abandonne
+                # If a character has not been sent in less than a second,
+                # we give up
                 break
 
         return retour
 
     def definir_mode(self, mode = 'VIDEOTEX'):
-        """Définit le mode de fonctionnement du Minitel.
+        """Defines the Minitel's operating mode.
 
-        Le Minitel peut fonctionner selon 3 modes : VideoTex (le mode standard
-        du Minitel, celui lors de l’allumage), Mixte ou TéléInformatique (un
-        mode 80 colonnes).
+        The Minitel can operate in 3 modes: VideoTex (the standard Minitel
+        mode, the one when switched on), Mixed or TeleInformatique (an
+        80-column mode).
 
-        La méthode definir_mode prend en compte le mode courant du Minitel pour
-        émettre la bonne commande.
+        The definir_mode method takes into account the current mode of the Minitel to
+        issue the correct command.
 
         :param mode:
-            une valeur parmi les suivantes : VIDEOTEX,
-            MIXTE ou TELEINFORMATIQUE (la casse est importante).
+            a value among the following: VIDEOTEX,
+            MIXTE or TELEINFORMATIQUE (case is important).
         :type mode:
-            une chaîne de caractères
+            a string
 
         :returns:
-            False si le changement de mode n’a pu avoir lieu, True sinon.
+            False if the mode change could not take place, True otherwise.
         """
         assert isinstance(mode, str)
 
-        # 3 modes sont possibles
+        # 3 modes are possible
         if mode not in ['VIDEOTEX', 'MIXTE', 'TELEINFORMATIQUE']:
             return False
 
-        # Si le mode demandé est déjà actif, ne fait rien
+        # If the requested mode is already active, do nothing
         if self.mode == mode:
             return True
 
         resultat = False
 
-        # Il y a 9 cas possibles, mais seulement 6 sont pertinents. Les cas
-        # demandant de passer de VIDEOTEX à VIDEOTEX, par exemple, ne donnent
-        # lieu à aucune transaction avec le Minitel
+        # There are 9 possible cases, but only 6 are relevant. The cases
+        # asking to switch from VIDEOTEX to VIDEOTEX, for example, do not give
+        # rise to any transaction with the Minitel
         if self.mode == 'TELEINFORMATIQUE' and mode == 'VIDEOTEX':
             retour = self.appeler([CSI, 0x3f, 0x7b], 2)
             resultat = retour.egale([SEP, 0x5e])
         elif self.mode == 'TELEINFORMATIQUE' and mode == 'MIXTE':
-            # Il n’existe pas de commande permettant de passer directement du
-            # mode TéléInformatique au mode Mixte. On effectue donc la
-            # transition en deux étapes en passant par le mode Videotex
+            # There is no command to switch directly from
+            # TeleInformatique mode to Mixed mode. We therefore perform the
+            # transition in two steps via Videotex mode
             retour = self.appeler([CSI, 0x3f, 0x7b], 2)
             resultat = retour.egale([SEP, 0x5e])
 
@@ -450,52 +448,52 @@ class Minitel:
             retour = self.appeler([PRO2, TELINFO], 4)
             resultat = retour.egale([CSI, 0x3f, 0x7a])
 
-        # Si le changement a eu lieu, on garde le nouveau mode en mémoire
+        # If the change has taken place, we keep the new mode in memory
         if resultat:
             self.mode = mode
 
         return resultat
 
     def identifier(self):
-        """Identifie le Minitel connecté.
+        """Identifies the connected Minitel.
 
-        Cette méthode doit être appelée une fois la connexion établie avec le
-        Minitel afin de déterminer les fonctionnalités et caractéristiques
-        disponibles.
+        This method must be called once the connection with the
+        Minitel has been established in order to determine the available
+        features and characteristics.
 
-        Aucune valeur n’est retournée. À la place, l’attribut capacite de
-        l’objet contient un dictionnaire de valeurs renseignant sur les
-        capacités du Minitel :
+        No value is returned. Instead, the capacite attribute of
+        the object contains a dictionary of values providing information on the
+        Minitel's capabilities:
 
-        - capacite['nom'] -- Nom du Minitel (ex. Minitel 2)
-        - capacite['retournable'] -- Le Minitel peut-il être retourné et
-          servir de modem ? (True ou False)
-        - capacite['clavier'] -- Clavier (None, ABCD ou Azerty)
-        - capacite['vitesse'] -- Vitesse maxi en bps (1200, 4800 ou 9600)
-        - capacite['constructeur'] -- Nom du constructeur (ex. Philips)
-        - capacite['80colonnes'] -- Le Minitel peut-il afficher 80
-          colonnes ? (True ou False)
-        - capacite['caracteres'] -- Peut-on redéfinir des caractères ?
-          (True ou False)
-        - capacite['version'] -- Version du logiciel (une lettre)
+        - capacite['nom'] -- Name of the Minitel (e.g. Minitel 2)
+        - capacite['retournable'] -- Can the Minitel be flipped and
+          serve as a modem? (True or False)
+        - capacite['clavier'] -- Keyboard (None, ABCD or Azerty)
+        - capacite['vitesse'] -- Max speed in bps (1200, 4800 or 9600)
+        - capacite['constructeur'] -- Manufacturer's name (e.g. Philips)
+        - capacite['80colonnes'] -- Can the Minitel display 80
+          columns? (True or False)
+        - capacite['caracteres'] -- Can characters be redefined?
+          (True or False)
+        - capacite['version'] -- Software version (a letter)
         """
         self.capacite = CAPACITES_BASIQUES
 
-        # Émet la commande d’identification
+        # Issues the identification command
         retour = self.appeler([PRO1, ENQROM], 5)
 
-        # Teste la validité de la réponse
+        # Tests the validity of the response
         if (retour.longueur != 5 or
             retour.valeurs[0] != SOH or
             retour.valeurs[4] != EOT):
             return
 
-        # Extrait les caractères d’identification
+        # Extracts the identification characters
         constructeur_minitel = chr(retour.valeurs[1])
         type_minitel         = chr(retour.valeurs[2])
         version_logiciel     = chr(retour.valeurs[3])
 
-        # Types de Minitel
+        # Minitel types
         if type_minitel in TYPE_MINITELS:
             self.capacite = TYPE_MINITELS[type_minitel]
 
@@ -504,110 +502,110 @@ class Minitel:
 
         self.capacite['version'] = version_logiciel
 
-        # Correction du constructeur
+        # Manufacturer correction
         if constructeur_minitel == 'B' and type_minitel == 'v':
             self.capacite['constructeur'] = 'Philips'
         elif constructeur_minitel == 'C':
             if version_logiciel == ['4', '5', ';', '<']:
                 self.capacite['constructeur'] = 'Telic ou Matra'
 
-        # Détermine le mode écran dans lequel se trouve le Minitel
+        # Determines the screen mode in which the Minitel is
         retour = self.appeler([PRO1, STATUS_FONCTIONNEMENT], LONGUEUR_PRO2)
 
         if retour.longueur != LONGUEUR_PRO2:
-            # Le Minitel est en mode Téléinformatique car il ne répond pas
-            # à une commande protocole
+            # The Minitel is in Teleinformatique mode because it does not respond
+            # to a protocol command
             self.mode = 'TELEINFORMATIQUE'
         elif retour.valeurs[3] & 1 == 1:
-            # Le bit 1 du status fonctionnement indique le mode 80 colonnes
+            # Bit 1 of the operating status indicates 80-column mode
             self.mode = 'MIXTE'
         else:
-            # Par défaut, on considère qu’on est en mode Vidéotex
+            # By default, we consider that we are in Videotex mode
             self.mode = 'VIDEOTEX'
 
     def deviner_vitesse(self):
-        """Deviner la vitesse de connexion avec le Minitel.
+        """Guesses the connection speed with the Minitel.
 
-        Cette méthode doit être appelée juste après la création de l’objet
-        afin de déterminer automatiquement la vitesse de transmission sur
-        laquelle le Minitel est réglé.
+        This method should be called just after creating the object
+        in order to automatically determine the transmission speed on
+        which the Minitel is set.
 
-        Pour effectuer la détection, la méthode deviner_vitesse va tester les
-        vitesses 9600 bps, 4800 bps, 1200 bps et 300 bps (dans cet ordre) et
-        envoyer à chaque fois une commande PRO1 de demande de statut terminal.
-        Si le Minitel répond par un acquittement PRO2, on a détecté la vitesse.
+        To perform the detection, the deviner_vitesse method will test the
+        speeds 9600 bps, 4800 bps, 1200 bps and 300 bps (in this order) and
+        send a PRO1 terminal status request command each time.
+        If the Minitel responds with a PRO2 acknowledgment, we have detected the speed.
 
-        En cas de détection, la vitesse est enregistré dans l’attribut vitesse
-        de l’objet.
+        In case of detection, the speed is stored in the vitesse attribute
+        of the object.
 
         :returns:
-            La méthode retourne la vitesse en bits par seconde ou -1 si elle
-            n’a pas pu être déterminée.
+            The method returns the speed in bits per second or -1 if it
+            could not be determined.
         """
-        # Vitesses possibles jusqu’au Minitel 2
+        # Possible speeds up to Minitel 2
         vitesses = [9600, 4800, 1200, 300]
 
         for vitesse in vitesses:
-            # Configure le port série à la vitesse à tester
+            # Configures the serial port to the speed to be tested
             self._minitel.baudrate = vitesse
 
-            # Envoie une demande de statut terminal
+            # Sends a terminal status request
             retour = self.appeler([PRO1, STATUS_TERMINAL], LONGUEUR_PRO2)
 
-            # Le Minitel doit renvoyer un acquittement PRO2
+            # The Minitel must return a PRO2 acknowledgment
             if retour.longueur == LONGUEUR_PRO2:
                 self.vitesse = vitesse
                 return vitesse
 
-        # La vitesse n’a pas été trouvée
+        # The speed was not found
         return -1
 
     def definir_vitesse(self, vitesse):
-        """Programme le Minitel et le port série pour une vitesse donnée.
+        """Programs the Minitel and the serial port for a given speed.
 
-        Pour changer la vitesse de communication entre l’ordinateur et le
-        Minitel, le développeur doit d’abord s’assurer que la connexion avec
-        le Minitel a été établie à la bonne vitesse (voir la méthode
-        deviner_vitesse).
+        To change the communication speed between the computer and the
+        Minitel, the developer must first ensure that the connection with
+        the Minitel has been established at the correct speed (see the
+        deviner_vitesse method).
 
-        Cette méthode ne doit être appelée qu’après que le Minitel ait été
-        identifié (voir la méthode identifier) car elle se base sur les
-        capacités détectées du Minitel.
+        This method should only be called after the Minitel has been
+        identified (see the identifier method) because it is based on the
+        detected capabilities of the Minitel.
 
-        La méthode envoie d’abord une commande de réglage de vitesse au Minitel
-        et, si celui-ci l’accepte, configure le port série à la nouvelle
-        vitesse.
+        The method first sends a speed setting command to the Minitel
+        and, if it accepts it, configures the serial port to the new
+        speed.
 
         :param vitesse:
-            vitesse en bits par seconde. Les valeurs acceptées sont 300, 1200,
-            4800 et 9600. La valeur 9600 n’est autorisée qu’à partir du Minitel
+            speed in bits per second. Accepted values are 300, 1200,
+            4800 and 9600. The value 9600 is only allowed from Minitel
             2
         :type vitesse:
-            un entier
+            an integer
 
         :returns:
-            True si la vitesse a pu être programmée, False sinon.
+            True if the speed could be programmed, False otherwise.
         """
         assert isinstance(vitesse, int)
 
-        # Vitesses possibles jusqu’au Minitel 2
+        # Possible speeds up to Minitel 2
         vitesses = {300: B300, 1200: B1200, 4800: B4800, 9600: B9600}
 
-        # Teste la validité de la vitesse demandée
+        # Tests the validity of the requested speed
         if vitesse not in vitesses or vitesse > self.capacite['vitesse']:
             return False
 
-        # Envoie une commande protocole de programmation de vitesse
+        # Sends a protocol command for speed programming
         retour = self.appeler([PRO2, PROG, vitesses[vitesse]], LONGUEUR_PRO2)
 
-        # Le Minitel doit renvoyer un acquittement PRO2
+        # The Minitel must return a PRO2 acknowledgment
         if retour.longueur == LONGUEUR_PRO2:
-            # Si on peut lire un acquittement PRO2 avant d’avoir régler la
-            # vitesse du port série, c’est que le Minitel ne peut pas utiliser
-            # la vitesse demandée
+            # If we can read a PRO2 acknowledgment before having set the
+            # serial port speed, it means that the Minitel cannot use
+            # the requested speed
             return False
 
-        # Configure le port série à la nouvelle vitesse
+        # Configures the serial port to the new speed
         self._minitel.baudrate = vitesse
         self.vitesse = vitesse
 
@@ -615,54 +613,53 @@ class Minitel:
 
     def configurer_clavier(self, etendu = False, curseur = False,
                            minuscule = False):
-        """Configure le fonctionnement du clavier.
+        """Configures the keyboard operation.
 
-        Configure le fonctionnement du clavier du Minitel. Cela impacte les
-        codes et caractères que le Minitel peut envoyer à l’ordinateur en
-        fonction des touches appuyées (touches alphabétiques, touches de
-        fonction, combinaisons de touches etc.).
+        Configures the operation of the Minitel keyboard. This impacts the
+        codes and characters that the Minitel can send to the computer
+        depending on the keys pressed (alphabetic keys, function keys,
+        key combinations, etc.).
 
-        La méthode renvoie True si toutes les commandes de configuration ont
-        correctement été traitées par le Minitel. Dès qu’une commande échoue,
-        la méthode arrête immédiatement et retourne False.
+        The method returns True if all configuration commands have
+        been correctly processed by the Minitel. As soon as a command fails,
+        the method stops immediately and returns False.
 
         :param etendu:
-            True pour un clavier en mode étendu, False pour un clavier en mode
-            normal
+            True for an extended mode keyboard, False for a normal mode
+            keyboard
         :type etendu:
-            un booléen
+            a boolean
 
         :param curseur:
-            True si les touches du curseur doivent être gérées, False sinon
+            True if the cursor keys should be managed, False otherwise
         :type curseur:
-            un booléen
+            a boolean
 
         :param minuscule:
-            True si l’appui sur une touche alphabétique sans appui simultané
-            sur la touche Maj/Shift doit générer une minuscule, False s’il
-            doit générer une majuscule.
+            True if pressing an alphabetic key without simultaneously pressing
+            the Shift key should generate a lowercase letter, False if it
+            should generate an uppercase letter.
         :type minuscule:
-            un booléen
+            a boolean
         """
         assert etendu in [True, False]
         assert curseur in [True, False]
         assert minuscule in [True, False]
 
-        # Les commandes clavier fonctionnent sur un principe de bascule
-        # start/stop
+        # The keyboard commands work on a start/stop toggle principle
         bascules = { True: START, False: STOP }
 
-        # Crée les séquences des 3 appels en fonction des arguments
+        # Creates the sequences of the 3 calls according to the arguments
         appels = [
             ([PRO3, bascules[etendu   ], RCPT_CLAVIER, ETEN], LONGUEUR_PRO3),
             ([PRO3, bascules[curseur  ], RCPT_CLAVIER, C0  ], LONGUEUR_PRO3),
             ([PRO2, bascules[minuscule], MINUSCULES        ], LONGUEUR_PRO2)
         ]
 
-        # Envoie les commandes une par une
+        # Sends the commands one by one
         for appel in appels:
-            commande = appel[0] # Premier élément du tuple = commande
-            longueur = appel[1] # Second élément du tuple = longueur réponse
+            commande = appel[0] # First element of the tuple = command
+            longueur = appel[1] # Second element of the tuple = response length
 
             retour = self.appeler(commande, longueur)
 
@@ -672,139 +669,139 @@ class Minitel:
         return True
 
     def couleur(self, caractere = None, fond = None):
-        """Définit les couleurs utilisées pour les prochains caractères.
+        """Defines the colors used for the next characters.
 
-        Les couleurs possibles sont noir, rouge, vert, jaune, bleu, magenta,
-        cyan, blanc et un niveau de gris de 0 à 7.        
+        The possible colors are black, red, green, yellow, blue, magenta,
+        cyan, white and a gray level from 0 to 7.
 
         Note:
-        En Videotex, la couleur de fond ne s’applique qu’aux délimiteurs. Ces
-        délimiteurs sont l’espace et les caractères semi-graphiques. Définir
-        la couleur de fond et afficher immédiatement après un caractère autre
-        qu’un délimiteur (une lettre par exemple) n’aura aucun effet.
+        In Videotex, the background color only applies to delimiters. These
+        delimiters are the space and semi-graphic characters. Defining
+        the background color and immediately displaying a character other
+        than a delimiter (a letter for example) will have no effect.
 
-        Si une couleur est positionnée à None, la méthode n’émet aucune
-        commande en direction du Minitel.
+        If a color is set to None, the method does not issue any
+        command to the Minitel.
 
-        Si une couleur n’est pas valide, elle est simplement ignorée.
+        If a color is not valid, it is simply ignored.
 
         :param caractere:
-            couleur à affecter à l’avant-plan.
+            color to assign to the foreground.
         :type caractere:
-            une chaîne de caractères, un entier ou None
+            a string, an integer or None
 
         :param fond:
-            couleur à affecter à l’arrière-plan.
+            color to assign to the background.
         :type fond:
-            une chaîne de caractères, un entier ou None
+            a string, an integer or None
         """
         assert isinstance(caractere, (str, int)) or caractere == None
         assert isinstance(fond, (str, int)) or fond == None
 
-        # Définit la couleur d’avant-plan (la couleur du caractère)
+        # Defines the foreground color (the character color)
         if caractere != None:
             couleur = normaliser_couleur(caractere)
             if couleur != None:
                 self.envoyer([ESC, 0x40 + couleur])
 
-        # Définit la couleur d’arrière-plan (la couleur de fond)
+        # Defines the background color (the background color)
         if fond != None:
             couleur = normaliser_couleur(fond)
             if couleur != None:
                 self.envoyer([ESC, 0x50 + couleur])
 
     def position(self, colonne, ligne, relatif = False):
-        """Définit la position du curseur du Minitel
+        """Defines the position of the Minitel cursor
 
         Note:
-        Cette méthode optimise le déplacement du curseur, il est donc important
-        de se poser la question sur le mode de positionnement (relatif vs
-        absolu) car le nombre de caractères générés peut aller de 1 à 5.
+        This method optimizes cursor movement, so it is important
+        to consider the positioning mode (relative vs.
+        absolute) because the number of characters generated can range from 1 to 5.
 
-        Sur le Minitel, la première colonne a la valeur 1. La première ligne
-        a également la valeur 1 bien que la ligne 0 existe. Cette dernière
-        correspond à la ligne d’état et possède un fonctionnement différent
-        des autres lignes.
+        On the Minitel, the first column has the value 1. The first line
+        also has the value 1 although line 0 exists. The latter
+        corresponds to the status line and has a different operation
+        from the other lines.
 
         :param colonne:
-            colonne à laquelle positionner le curseur
+            column to position the cursor at
         :type colonne:
-            un entier relatif
+            a relative integer
 
         :param ligne:
-            ligne à laquelle positionner le curseur
+            line to position the cursor at
         :type ligne:
-            un entier relatif
+            a relative integer
 
         :param relatif:
-            indique si les coordonnées fournies sont relatives
-            (True) par rapport à la position actuelle du curseur ou si
-            elles sont absolues (False, valeur par défaut)
+            indicates whether the coordinates provided are relative
+            (True) to the current cursor position or if
+            they are absolute (False, default value)
         :type relatif:
-            un booléen
+            a boolean
         """
         assert isinstance(colonne, int)
         assert isinstance(ligne, int)
         assert relatif in [True, False]
 
         if not relatif:
-            # Déplacement absolu
+            # Absolute movement
             if colonne == 1 and ligne == 1:
                 self.envoyer([RS])
             else:
                 self.envoyer([US, 0x40 + ligne, 0x40 + colonne])
         else:
-            # Déplacement relatif par rapport à la position actuelle
+            # Relative movement from the current position
             if ligne != 0:
                 if ligne >= -4 and ligne <= -1:
-                    # Déplacement court en haut
+                    # Short upward movement
                     self.envoyer([VT]*-ligne)
                 elif ligne >= 1 and ligne <= 4:
-                    # Déplacement court en bas
+                    # Short downward movement
                     self.envoyer([LF]*ligne)
                 else:
-                    # Déplacement long en haut ou en bas
+                    # Long upward or downward movement
                     direction = { True: 'B', False: 'A'}
                     self.envoyer([CSI, str(ligne), direction[ligne < 0]])
 
             if colonne != 0:
                 if colonne >= -4 and colonne <= -1:
-                    # Déplacement court à gauche
+                    # Short leftward movement
                     self.envoyer([BS]*-colonne)
                 elif colonne >= 1 and colonne <= 4:
-                    # Déplacement court à droite
+                    # Short rightward movement
                     self.envoyer([TAB]*colonne)
                 else:
-                    # Déplacement long à gauche ou à droite
+                    # Long leftward or rightward movement
                     direction = { True: 'C', False: 'D'}
                     self.envoyer([CSI, str(colonne), direction[colonne < 0]])
 
     def taille(self, largeur = 1, hauteur = 1):
-        """Définit la taille des prochains caractères
+        """Defines the size of the next characters
 
-        Le Minitel est capable d’agrandir les caractères. Quatres tailles sont
-        disponibles :
+        The Minitel is capable of enlarging characters. Four sizes are
+        available:
 
-        - largeur = 1, hauteur = 1: taille normale
-        - largeur = 2, hauteur = 1: caractères deux fois plus larges
-        - largeur = 1, hauteur = 2: caractères deux fois plus hauts
-        - largeur = 2, hauteur = 2: caractères deux fois plus hauts et larges
+        - largeur = 1, hauteur = 1: normal size
+        - largeur = 2, hauteur = 1: characters twice as wide
+        - largeur = 1, hauteur = 2: characters twice as high
+        - largeur = 2, hauteur = 2: characters twice as high and wide
 
         Note:
-        Cette commande ne fonctionne qu’en mode Videotex.
+        This command only works in Videotex mode.
 
-        Le positionnement avec des caractères deux fois plus hauts se fait par
-        rapport au bas du caractère.
+        Positioning with characters twice as high is done from
+        the bottom of the character.
 
         :param largeur:
-            coefficiant multiplicateur de largeur (1 ou 2)
+            width multiplier (1 or 2)
         :type largeur:
-            un entier
+            an integer
 
         :param hauteur:
-            coefficient multiplicateur de hauteur (1 ou 2)
+            height multiplier (1 or 2)
         :type hauteur:
-            un entier
+            an integer
         """
         assert largeur in [1, 2]
         assert hauteur in [1, 2]
@@ -812,61 +809,61 @@ class Minitel:
         self.envoyer([ESC, 0x4c + (hauteur - 1) + (largeur - 1) * 2])
 
     def effet(self, soulignement = None, clignotement = None, inversion = None):
-        """Active ou désactive des effets
+        """Activates or deactivates effects
 
-        Le Minitel dispose de 3 effets sur les caractères : soulignement,
-        clignotement et inversion vidéo.
+        The Minitel has 3 effects on characters: underline,
+        blinking and video inversion.
 
         :param soulignement:
-            indique s’il faut activer le soulignement (True) ou le désactiver
+            indicates whether to activate underlining (True) or deactivate it
             (False)
         :type soulignement:
-            un booléen ou None
+            a boolean or None
 
         :param clignotement:
-            indique s’il faut activer le clignotement (True) ou le désactiver
+            indicates whether to activate blinking (True) or deactivate it
             (False)
         :type clignotement:
-            un booléen ou None
+            a boolean or None
 
         :param inversion:
-            indique s’il faut activer l’inverson vidéo (True) ou la désactiver
+            indicates whether to activate video inversion (True) or deactivate it
             (False)
         :type inversion:
-            un booléen ou None
+            a boolean or None
         """
         assert soulignement in [True, False, None]
         assert clignotement in [True, False, None]
         assert inversion in [True, False, None]
 
-        # Gère le soulignement
+        # Manages underlining
         soulignements = {True: [ESC, 0x5a], False: [ESC, 0x59], None: None}
         self.envoyer(soulignements[soulignement])
 
-        # Gère le clignotement
+        # Manages blinking
         clignotements = {True: [ESC, 0x48], False: [ESC, 0x49], None: None}
         self.envoyer(clignotements[clignotement])
 
-        # Gère l’inversion vidéo
+        # Manages video inversion
         inversions = {True: [ESC, 0x5d], False: [ESC, 0x5c], None: None}
         self.envoyer(inversions[inversion])
 
     def curseur(self, visible):
-        """Active ou désactive l’affichage du curseur
+        """Activates or deactivates the cursor display
 
-        Le Minitel peut afficher un curseur clignotant à la position
-        d’affichage des prochains caractères.
+        The Minitel can display a blinking cursor at the
+        display position of the next characters.
 
-        Il est intéressant de le désactiver quand l’ordinateur doit envoyer
-        de longues séquences de caractères car le Minitel va chercher à
-        afficher le curseur pour chaque caractère affiché, générant un effet
-        peu agréable.
+        It is interesting to deactivate it when the computer has to send
+        long character sequences because the Minitel will try to
+        display the cursor for each character displayed, generating an
+        unpleasant effect.
 
         :param visible:
-            indique s’il faut activer le curseur (True) ou le rendre invisible
+            indicates whether to activate the cursor (True) or make it invisible
             (False)
         :type visible:
-            un booléen
+            a boolean
         """
         assert visible in [True, False]
 
@@ -874,27 +871,27 @@ class Minitel:
         self.envoyer([etats[visible]])
 
     def echo(self, actif):
-        """Active ou désactive l’écho clavier
+        """Activates or deactivates keyboard echo
 
-        Par défaut, le Minitel envoie tout caractère tapé au clavier à la fois
-        à l’écran et sur la prise péri-informatique. Cette astuce évite à
-        l’ordinateur de dévoir renvoyer à l’écran le dernière caractère tapé,
-        économisant ainsi de la bande passante.
+        By default, the Minitel sends any character typed on the keyboard to both
+        the screen and the peripheral socket. This trick saves the
+        computer from having to send back to the screen the last character typed,
+        thus saving bandwidth.
 
-        Dans le cas où l’ordinateur propose une interface utilisateur plus
-        poussée, il est important de pouvoir contrôler exactement ce qui est
-        affiché par le Minitel.
+        In the case where the computer offers a more advanced user interface,
+        it is important to be able to control exactly what is
+        displayed by the Minitel.
 
-        La méthode retourne True si la commande a bien été traitée par le
-        Minitel, False sinon.
+        The method returns True if the command has been correctly processed by the
+        Minitel, False otherwise.
 
         :param actif:
-            indique s’il faut activer l’écho (True) ou le désactiver (False)
+            indicates whether to activate echo (True) or deactivate it (False)
         :type actif:
-            un booléen
+            a boolean
 
         :returns:
-            True si la commande a été acceptée par le Minitel, False sinon.
+            True if the command was accepted by the Minitel, False otherwise.
         """
         assert actif in [True, False]
 
@@ -907,24 +904,24 @@ class Minitel:
         return retour.longueur == LONGUEUR_PRO3
 
     def efface(self, portee = 'tout'):
-        """Efface tout ou partie de l’écran
+        """Erases all or part of the screen
 
-        Cette méthode permet d’effacer :
+        This method allows erasing:
 
 
         :param portee:
-            indique la portée de l’effacement :
+            indicates the scope of the erasure:
 
-            - tout l’écran ('tout'),
-            - du curseur jusqu’à la fin de la ligne ('finligne'),
-            - du curseur jusqu’au bas de l’écran ('finecran'),
-            - du début de l’écran jusqu’au curseur ('debutecran'),
-            - du début de la ligne jusqu’au curseur ('debut_ligne'),
-            - la ligne entière ('ligne'),
-            - la ligne de statut, rangée 00 ('statut'),
-            - tout l’écran et la ligne de statut ('vraimenttout').
+            - the whole screen ('tout'),
+            - from the cursor to the end of the line ('finligne'),
+            - from the cursor to the bottom of the screen ('finecran'),
+            - from the beginning of the screen to the cursor ('debutecran'),
+            - from the beginning of the line to the cursor ('debut_ligne'),
+            - the entire line ('ligne'),
+            - the status line, row 00 ('statut'),
+            - the whole screen and the status line ('vraimenttout').
         :type porte:
-            une chaîne de caractères
+            a string
         """
         portees = {
             'tout': [FF],
@@ -943,17 +940,17 @@ class Minitel:
         self.envoyer(portees[portee])
 
     def repeter(self, caractere, longueur):
-        """Répéter un caractère
+        """Repeats a character
 
         :param caractere:
-            caractère à répéter
+            character to repeat
         :type caractere:
-            une chaîne de caractères
+            a string
 
         :param longueur:
-            le nombre de fois où le caractère est répété
+            the number of times the character is repeated
         :type longueur:
-            un entier positif
+            a positive integer
         """
         assert isinstance(longueur, int)
         assert longueur > 0 and longueur <= 40
@@ -963,37 +960,37 @@ class Minitel:
         self.envoyer([caractere, REP, 0x40 + longueur - 1])
 
     def bip(self):
-        """Émet un bip
+        """Emits a beep
 
-        Demande au Minitel d’émettre un bip
+        Asks the Minitel to emit a beep
         """
         self.envoyer([BEL])
 
     def debut_ligne(self):
-        """Retour en début de ligne
+        """Return to the beginning of the line
 
-        Positionne le curseur au début de la ligne courante.
+        Positions the cursor at the beginning of the current line.
         """
         self.envoyer([CR])
 
     def supprime(self, nb_colonne = None, nb_ligne = None):
-        """Supprime des caractères après le curseur
+        """Deletes characters after the cursor
 
-        En spécifiant un nombre de colonnes, cette méthode supprime des
-        caractères après le curseur, le Minitel ramène les derniers caractères
-        contenus sur la ligne.
+        By specifying a number of columns, this method deletes
+        characters after the cursor, the Minitel brings back the last characters
+        contained on the line.
         
-        En spécifiant un nombre de lignes, cette méthode supprime des lignes
-        sous la ligne contenant le curseur, remontant les lignes suivantes.
+        By specifying a number of lines, this method deletes lines
+        below the line containing the cursor, moving up the following lines.
 
         :param nb_colonne:
-            nombre de caractères à supprimer
+            number of characters to delete
         :type nb_colonne:
-            un entier positif
+            a positive integer
         :param nb_ligne:
-            nombre de lignes à supprimer
+            number of lines to delete
         :type nb_ligne:
-            un entier positif
+            a positive integer
         """
         assert (isinstance(nb_colonne, int) and nb_colonne >= 0) or \
                 nb_colonne == None
@@ -1007,19 +1004,19 @@ class Minitel:
             self.envoyer([CSI, str(nb_ligne), 'M'])
 
     def insere(self, nb_colonne = None, nb_ligne = None):
-        """Insère des caractères après le curseur
+        """Inserts characters after the cursor
 
-        En insérant des caractères après le curseur, le Minitel pousse les
-        derniers caractères contenus sur la ligne à droite.
+        By inserting characters after the cursor, the Minitel pushes the
+        last characters contained on the line to the right.
 
         :param nb_colonne:
-            nombre de caractères à insérer
+            number of characters to insert
         :type nb_colonne:
-            un entier positif
+            a positive integer
         :param nb_ligne:
-            nombre de lignes à insérer
+            number of lines to insert
         :type nb_ligne:
-            un entier positif
+            a positive integer
         """
         assert (isinstance(nb_colonne, int) and nb_colonne >= 0) or \
                 nb_colonne == None
@@ -1033,13 +1030,13 @@ class Minitel:
             self.envoyer([CSI, str(nb_ligne), 'L'])
 
     def semigraphique(self, actif = True):
-        """Passe en mode semi-graphique ou en mode alphabétique
+        """Switches to semi-graphic mode or alphabetic mode
 
         :param actif:
-            True pour passer en mode semi-graphique, False pour revenir au
-            mode normal
+            True to switch to semi-graphic mode, False to return to
+            normal mode
         :type actif:
-            un booléen
+            a boolean
         """
         assert actif in [True, False]
 
@@ -1047,83 +1044,83 @@ class Minitel:
         self.envoyer(actifs[actif])
 
     def redefinir(self, depuis, dessins, jeu = 'G0'):
-        """Redéfinit des caractères du Minitel
+        """Redefines Minitel characters
 
-        À partir du Minitel 2, il est possible de redéfinir des caractères.
-        Chaque caractère est dessiné à partir d’une matrice 8×10 pixels.
+        From Minitel 2, it is possible to redefine characters.
+        Each character is drawn from an 8×10 pixel matrix.
 
-        Les dessins des caractères sont données par une suite de 0 et de 1 dans
-        une chaîne de caractères. Tout autre caractère est purement et
-        simplement ignoré. Cette particularité permet de dessiner les
-        caractères depuis un éditeur de texte standard et d’ajouter des
-        commentaires.
+        The character designs are given by a sequence of 0s and 1s in
+        a string. Any other character is purely and
+        simply ignored. This feature allows drawing the
+        characters from a standard text editor and adding
+        comments.
         
-        Exemple::
+        Example::
 
             11111111
             10000001
             10000001
             10000001
-            10000001 Ceci est un rectangle !
+            10000001 This is a rectangle!
             10000001
             10000001
             10000001
             10000001
             11111111
 
-        Le Minitel n’insère aucun pixel de séparation entre les caractères,
-        il faut donc prendre cela en compte et les inclure dans vos dessins.
+        The Minitel does not insert any separation pixels between the characters,
+        so this must be taken into account and included in your designs.
 
-        Une fois le ou les caractères redéfinis, le jeu de caractères spécial
-        les contenant est automatiquement sélectionné et ils peuvent donc
-        être utilisés immédiatement.
+        Once the character(s) are redefined, the special character set
+        containing them is automatically selected and they can therefore
+        be used immediately.
 
         :param depuis:
-            caractère à partir duquel redéfinir
+            character from which to redefine
         :type depuis:
-            une chaîne de caractères
+            a string
         :param dessins:
-            dessins des caractères à redéfinir
+            designs of the characters to be redefined
         :type dessins:
-            une chaîne de caractères
+            a string
         :param jeu:
-            palette de caractères à modifier (G0 ou G1)
+            character palette to modify (G0 or G1)
         :type jeu:
-            une chaîne de caractères
+            a string
         """
         assert jeu == 'G0' or jeu == 'G1'
         assert isinstance(depuis, str) and len(depuis) == 1
         assert isinstance(dessins, str)
 
-        # Deux jeux sont disponible G’0 et G’1
+        # Two sets are available G’0 and G’1
         if jeu == 'G0':
             self.envoyer([US, 0x23, 0x20, 0x20, 0x20, 0x42, 0x49])
         else:
             self.envoyer([US, 0x23, 0x20, 0x20, 0x20, 0x43, 0x49])
 
-        # On indique à partir de quel caractère on veut rédéfinir les dessins
+        # We indicate from which character we want to redefine the designs
         self.envoyer([US, 0x23, depuis, 0x30])
 
         octet = ''
         compte_pixel = 0
         for pixel in dessins:
-            # Seuls les caractères 0 et 1 sont interprétés, les autres sont
-            # ignorés. Cela permet de présenter les dessins dans le code
-            # source de façon plus lisible
+            # Only the characters 0 and 1 are interpreted, the others are
+            # ignored. This allows presenting the designs in the source code
+            # in a more readable way
             if pixel != '0' and pixel != '1':
                 continue
 
             octet = octet + pixel
             compte_pixel += 1
 
-            # On regroupe les pixels du caractères par paquets de 6
-            # car on ne peut envoyer que 6 bits à la fois
+            # We group the character's pixels in packets of 6
+            # because we can only send 6 bits at a time
             if len(octet) == 6:
                 self.envoyer(0x40 + int(octet, 2))
                 octet = ''
 
-            # Quand 80 pixels (8 colonnes × 10 lignes) ont été envoyés
-            # on ajoute 4 bits à zéro car l’envoi se fait par paquet de 6 bits
+            # When 80 pixels (8 columns × 10 lines) have been sent
+            # we add 4 zero bits because the sending is done in packets of 6 bits
             # (8×10 = 80 pixels, 14×6 = 84 bits, 84-80 = 4)
             if compte_pixel == 80:
                 self.envoyer(0x40 + int(octet + '0000', 2))
@@ -1131,10 +1128,10 @@ class Minitel:
                 octet = ''
                 compte_pixel = 0
 
-        # Positionner le curseur permet de sortir du mode de définition
+        # Positioning the cursor allows exiting the definition mode
         self.envoyer([US, 0x41, 0x41])
 
-        # Sélectionne le jeu de caractère fraîchement modifié (G’0 ou G’1)
+        # Selects the freshly modified character set (G’0 or G’1)
         if jeu == 'GO':
             self.envoyer([ESC, 0x28, 0x20, 0x42])
         else:
