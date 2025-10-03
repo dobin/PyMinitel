@@ -18,7 +18,7 @@ from minitel.Sequence import Sequence
 from minitel.constantes import SO, SI
 
 
-test_string = "` { \\ ¦ } ^ ~ / _ "
+test_string = "` { \\ ¦ } ^ ~ / _ |"
 minitel.envoyer(test_string)
 minitel.envoyer("\n\r")
 
@@ -35,13 +35,7 @@ minitel.envoyer("\n\r")
 minitel.envoyer(SO)
 for b in test_bytes:
     minitel.envoyer(Sequence(b))
-minitel.envoyer("\n\r")
-
 minitel.envoyer(SI)
-for b in test_bytes:
-    minitel.envoyer(Sequence(b))
-minitel.envoyer("\n\r")
-
 
 
 minitel.close()
