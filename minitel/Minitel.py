@@ -99,7 +99,7 @@ class Minitel:
         minitel.close()
 
     """
-    def __init__(self, peripherique = 'COM3'):
+    def __init__(self, peripherique = '/dev/ttyUSB0'):
         """Minitel constructor
 
         The serial connection is established according to the Minitel's basic standard.
