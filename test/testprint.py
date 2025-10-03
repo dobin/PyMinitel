@@ -32,12 +32,14 @@ for b in test_bytes:
     minitel.envoyer(Sequence(b))
 minitel.envoyer("\n\r")
 
+minitel.envoyer(SO)
 for b in test_bytes:
-    minitel.envoyer(Sequence([SO , b]))
+    minitel.envoyer(Sequence(b))
 minitel.envoyer("\n\r")
 
+minitel.envoyer(SI)
 for b in test_bytes:
-    minitel.envoyer(Sequence([SI , b]))
+    minitel.envoyer(Sequence(b))
 minitel.envoyer("\n\r")
 
 
